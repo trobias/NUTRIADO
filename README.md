@@ -1,7 +1,3 @@
-¡Claro! Aquí tienes un **README.md** estructurado para tu proyecto **Nutriado**. Incluye un apartado para la captura de la página principal donde puedas agregar la imagen más adelante.
-
----
-
 # Nutriado - Asistente Nutricional Inteligente
 
 **Nutriado** es un asistente nutricional inteligente que te ayuda a encontrar la mejor dieta según lo que tienes disponible en tu hogar. Utiliza inteligencia artificial para sugerir recetas saludables, evaluar tus necesidades nutricionales y recomendar productos para completar tu dieta. Conectamos la tecnología con la salud para hacer más fácil llevar una vida saludable.
