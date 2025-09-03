@@ -3,6 +3,9 @@
 **Nutriado** es un asistente nutricional inteligente que te ayuda a encontrar la mejor dieta según lo que tienes disponible en tu hogar. Utiliza inteligencia artificial para sugerir recetas saludables, evaluar tus necesidades nutricionales y recomendar productos para completar tu dieta. Conectamos la tecnología con la salud para hacer más fácil llevar una vida saludable.
 
 ---
+PDF Análisis y Diseño
+https://github.com/trobias/NUTRIADO/blob/main/NUTRIADO_ANALISISYDISENO_TARNOWSKITOBIAS.pdf
+---
 
 ## 🚀 Características del Proyecto
 
