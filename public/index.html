@@ -5,7 +5,7 @@
   <title>Nutriado - Asistente Nutricional Inteligente</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Nutriado te sugiere recetas según lo que tenés en casa y calcula tus necesidades nutricionales." />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
   <!-- Header / Nav -->
@@ -16,10 +16,10 @@
           Nutr<span class="ia-highlight">ia</span>do
         </div>
         <ul class="nav-menu">
-          <li><a href="index.html" class="nav-link active">Inicio</a></li>
-          <li><a href="listado_tabla.html" class="nav-link">Tabla de productos</a></li>
-          <li><a href="listado_box.html" class="nav-link">Tarjetas de productos</a></li>
-          <li><a href="comprar.html" class="nav-link">Comprar</a></li>
+          <li><a href="/index.html" class="nav-link active">Inicio</a></li>
+          <li><a href="/listado_tabla.html" class="nav-link">Tabla de productos</a></li>
+          <li><a href="/listado_box.html" class="nav-link">Tarjetas de productos</a></li>
+          <li><a href="/comprar.html" class="nav-link">Comprar</a></li>
           <li><a href="#contacto" class="nav-link">Contacto</a></li>
         </ul>
       </div>
@@ -28,13 +28,13 @@
 
   <!-- Main -->
   <main class="main">
-    <!-- Hero -->
+    <!-- Hero principal con asistente centrado -->
     <section class="hero">
       <div class="hero-content">
         <div class="logo-container">
           <div class="main-logo">
             <img
-              src="../images/nutriado-logo.png"
+              src="/images/nutriado-logo.png"
               alt="Nutriado - Asistente Nutricional Inteligente"
               class="logo-image"
               width="220"
@@ -44,54 +44,52 @@
         </div>
 
         <div class="hero-description">
-          <h1>Revolucioná tu alimentación con inteligencia artificial</h1>
+          <h1>Tu Asistente Nutricional Inteligente</h1>
           <p>
-            Nutriado combina ciencia nutricional y tecnología para darte
-            recomendaciones personalizadas. Analizamos tus necesidades, preferencias
-            y objetivos de salud para guiarte hacia una alimentación más inteligente.
+            Comenzá calculando tu IMC y contanos un poco de vos.
+            Después, chateá con Nutriado para recibir recetas y recomendaciones personalizadas.
           </p>
-
-          <div class="features-preview">
-            <div class="feature-item"><span class="feature-icon">🧠</span><span>Análisis nutricional inteligente</span></div>
-            <div class="feature-item"><span class="feature-icon">🎯</span><span>Recomendaciones personalizadas</span></div>
-            <div class="feature-item"><span class="feature-icon">📊</span><span>Seguimiento de objetivos</span></div>
-            <div class="feature-item"><span class="feature-icon">🥗</span><span>Recetas saludables</span></div>
-          </div>
         </div>
 
-        <!-- Vista previa del chat (estática) -->
-        <div class="ai-chat-preview">
-          <div class="chat-container">
-            <div class="chat-header">
-              <span class="chat-icon">🤖</span>
-              <span>Asistente IA Nutricional</span>
-            </div>
-            <div class="chat-body">
-              <div class="chat-message">
-                <p>¡Hola! Soy tu asistente nutricional inteligente. Pronto podré ayudarte a:</p>
-                <ul>
-                  <li>Analizar el valor nutricional de los alimentos</li>
-                  <li>Crear planes de alimentación personalizados</li>
-                  <li>Responder tus dudas sobre nutrición</li>
-                  <li>Sugerir alternativas saludables</li>
-                  <li>Encontrar recetas con lo que ya tenés</li>
-                </ul>
-                <p class="coming-soon">🚀 Disponible ahora en el widget abajo a la derecha.</p>
-              </div>
-            </div>
-          </div>
+        <!-- Paso 1: formulario de perfil (IMC, edad, sexo) -->
+        <form id="user-form" class="user-form" autocomplete="on" aria-label="Formulario de perfil nutricional">
+          <input type="number" id="edad" placeholder="Edad (años)" min="1" max="120" required aria-label="Edad" />
+          <select id="sexo" required aria-label="Sexo">
+            <option value="">Sexo</option>
+            <option value="femenino">Femenino</option>
+            <option value="masculino">Masculino</option>
+            <option value="otro">Otro / Prefiero no decir</option>
+          </select>
+          <input type="number" id="peso" placeholder="Peso (kg)" min="20" max="400" step="0.1" required aria-label="Peso en kilogramos" />
+          <input type="number" id="altura" placeholder="Altura (cm)" min="80" max="240" step="0.1" required aria-label="Altura en centímetros" />
+          <button type="submit" class="btn-small" aria-label="Calcular IMC y guardar perfil">Calcular IMC</button>
+        </form>
+
+        <!-- Paso 2: chat centrado -->
+        <div id="nutriado-chat" class="chat chat-center" aria-live="polite" style="display:none;">
+          <div class="chat-header">Nutriado – Asistente IA</div>
+          <div id="chat-log" class="chat-log" role="log"></div>
+          <form id="chat-form" class="chat-form" autocomplete="off">
+            <input
+              id="chat-input"
+              placeholder="Contame qué tenés en la heladera..."
+              aria-label="Mensaje al asistente"
+              required
+            />
+            <button type="submit">Enviar</button>
+          </form>
         </div>
 
-        <a href="listado_box.html" class="cta-button">Explorar Productos</a>
+        <a href="/listado_box.html" class="cta-button" style="margin-top:1.5rem;">Explorar Productos</a>
       </div>
     </section>
 
     <!-- Sección contacto -->
-    <section id="contacto" class="contact-section">
-      <div class="contact-content">
+    <section id="contacto" class="contact-section" style="padding:2rem">
+      <div class="contact-content" style="max-width:800px;margin:0 auto;text-align:center">
         <h2>Contacto</h2>
         <p>¿Dudas o sugerencias? Escribinos y te respondemos.</p>
-        <ul class="contact-list">
+        <ul class="contact-list" style="list-style:none;padding:0;margin-top:1rem">
           <li>Email: <a href="mailto:contacto@nutriado.app">contacto@nutriado.app</a></li>
           <li>GitHub: <a href="https://github.com/trobias/NUTRIADO" target="_blank" rel="noopener">/trobias/NUTRIADO</a></li>
           <li>Documento: <a href="https://github.com/trobias/NUTRIADO/blob/main/NUTRIADO_ANALISISYDISENO_TARNOWSKITOBIAS.pdf" target="_blank" rel="noopener">Análisis y Diseño (PDF)</a></li>
@@ -104,9 +102,9 @@
   <footer class="footer">
     <div class="footer-content">
       <div class="footer-links">
-        <a href="index.html">Inicio</a>
-        <a href="listado_tabla.html">Productos</a>
-        <a href="comprar.html">Comprar</a>
+        <a href="/index.html">Inicio</a>
+        <a href="/listado_tabla.html">Productos</a>
+        <a href="/comprar.html">Comprar</a>
         <a href="#contacto">Contacto</a>
       </div>
       <div class="footer-info">
@@ -115,22 +113,48 @@
     </div>
   </footer>
 
-  <!-- Widget de chat (funcional) -->
-  <div id="nutriado-chat" class="chat" aria-live="polite">
-    <div class="chat-header">Nutriado – Asistente IA</div>
-    <div id="chat-log" class="chat-log" role="log"></div>
-    <form id="chat-form" class="chat-form" autocomplete="off">
-      <input
-        id="chat-input"
-        placeholder="Contame qué tenés en la heladera..."
-        aria-label="Mensaje al asistente"
-        required
-      />
-      <button type="submit">Enviar</button>
-    </form>
-  </div>
+  <!-- Script del chat (incluye manejo de perfil e IMC) -->
+  <script defer src="/chat.js"></script>
+  <script>
+    // Mini bootstrap para mostrar el chat tras guardar perfil
+    (function(){
+      const $userForm = document.getElementById('user-form');
+      const $chatBox  = document.getElementById('nutriado-chat');
 
-  <!-- Script del chat -->
-  <script src="chat.js" defer></script>
+      // Exponer variable global simple para que chat.js la pueda tomar si lo necesitás
+      // (chat.js ya envía context.profile con cada mensaje si incorporaste el snippet anterior)
+      window.__nutriadoProfile = {};
+
+      $userForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const edad   = parseInt(document.getElementById('edad').value, 10);
+        const sexo   = document.getElementById('sexo').value;
+        const peso   = parseFloat(document.getElementById('peso').value);
+        const alturaM = parseFloat(document.getElementById('altura').value) / 100; // cm -> m
+
+        if (!edad || !sexo || !peso || !alturaM) return;
+
+        const imc = (peso / (alturaM * alturaM)).toFixed(1);
+
+        // Guardar perfil para el chat
+        window.__nutriadoProfile = {
+          edad,
+          sexo,
+          peso,
+          altura: Math.round(alturaM * 100), // en cm
+          imc
+        };
+
+        // Mostrar el chat y enviar mensaje de confirmación (chat.js agrega el msg)
+        const ev = new CustomEvent('nutriado:profile:ready', { detail: window.__nutriadoProfile });
+        window.dispatchEvent(ev);
+
+        // Mostrar chat en pantalla
+        $chatBox.style.display = 'flex';
+        // Opcional: scrollear al chat
+        $chatBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    })();
+  </script>
 </body>
 </html>
