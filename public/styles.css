@@ -276,3 +276,34 @@ body{
    ========================= */
 .ia-highlight{ color: var(--primary-orange); }
 .main-logo{ margin-bottom: 2rem; }
+
+.chat-center {
+  margin: 2rem auto;
+  max-width: 600px;
+  width: 100%;
+  position: static; /* quita fixed */
+}
+.user-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+.user-form input, .user-form select {
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+.user-form button {
+  background: var(--primary-green);
+  color: white;
+  padding: 0.5rem 1.2rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.user-form button:hover {
+  background: #218838;
+}
+
