@@ -54,6 +54,28 @@ function renderBotMessage(data) {
   return html || 'Sin respuesta';
 }
 
+const $userForm = document.getElementById('user-form');
+const $chatBox = document.getElementById('nutriado-chat');
+
+// Guardar perfil
+let userProfile = {};
+
+$userForm?.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const edad = parseInt(document.getElementById('edad').value, 10);
+  const sexo = document.getElementById('sexo').value;
+  const peso = parseFloat(document.getElementById('peso').value);
+  const altura = parseFloat(document.getElementById('altura').value) / 100; // cm -> m
+
+  const imc = (peso / (altura * altura)).toFixed(1);
+
+  userProfile = { edad, sexo, peso, altura: altura*100, imc };
+
+  // mostrar en chat
+  $chatBox.style.display = 'flex';
+  addMsg(`✅ Perfil guardado. Edad: ${edad}, Sexo: ${sexo}, Peso: ${peso}kg, Altura: ${altura*100}cm, IMC: ${imc}`, 'bot');
+});
+
 $form?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = $input.value.trim();
@@ -93,3 +115,4 @@ $form?.addEventListener('submit', async (e) => {
     console.error(err);
   }
 });
+
