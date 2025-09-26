@@ -1,12 +1,12 @@
-// public/chat.js
-
+<!-- public/chat.js -->
+<script>
 // --- DOM ---
 const $log   = document.getElementById('chat-log');
 const $form  = document.getElementById('chat-form');
 const $input = document.getElementById('chat-input');
 
-const $userForm = document.getElementById('user-form'); // form de perfil (edad/sexo/peso/altura)
-const $chatBox  = document.getElementById('nutriado-chat'); // contenedor del chat (lo mostramos después de guardar perfil)
+const $userForm = document.getElementById('user-form');   // form de perfil (edad/sexo/peso/altura)
+const $chatBox  = document.getElementById('nutriado-chat'); // contenedor del chat
 
 // --- Session ---
 const sessionId = (() => {
@@ -20,8 +20,8 @@ const sessionId = (() => {
 })();
 
 // --- Estado ---
-let userProfile = {};     // { edad, sexo, pesoKg, alturaCm, imc }
-let lastPantry  = [];     // cache de la última “despensa” detectada/enviada
+let userProfile = {}; // { edad, sexo, pesoKg, alturaCm, imc }
+let lastPantry  = []; // cache de última “despensa” enviada
 
 // --- Helpers UI ---
 function addMsg(content, who = 'bot', isHTML = false) {
@@ -34,13 +34,12 @@ function addMsg(content, who = 'bot', isHTML = false) {
   return div;
 }
 
+// Renderer para respuestas “legacy” (reply/recetas/compras)
 function renderBotMessage(data) {
   const obj = Array.isArray(data) ? data[0] : data;
   let html = '';
 
-  if (obj.reply) {
-    html += `<p>${obj.reply}</p>`;
-  }
+  if (obj.reply) html += `<p>${obj.reply}</p>`;
 
   if (obj.recetas && obj.recetas.length) {
     html += `<h4>🍽️ Recetas sugeridas:</h4>`;
@@ -61,9 +60,54 @@ function renderBotMessage(data) {
   return html || 'Sin respuesta';
 }
 
+// Renderer específico Nutriado (schema con dish/consejos/etc.)
+function renderNutriado(obj = {}) {
+  if (!obj || typeof obj !== 'object') return '';
+
+  // tolera respuestas como [{output:{...}}] o {output:{...}} o {...}
+  if (Array.isArray(obj)) obj = obj[0]?.output ?? obj[0] ?? {};
+  if (obj.output) obj = obj.output;
+
+  if (!obj.dish || !obj.profile) return ''; // no coincide con el esquema Nutriado
+
+  const d    = obj.dish || {};
+  const prop = d.proporciones || {};
+  const pasos = Array.isArray(d.pasos) ? d.pasos : [];
+  const ing   = Array.isArray(d.ingredientes_usados) ? d.ingredientes_usados : [];
+  const alt   = Array.isArray(obj.alternativas_si_falta_algo) ? obj.alternativas_si_falta_algo : [];
+
+  let html = '';
+  html += `<h4>🍽️ ${d.nombre || 'Plato sugerido'}</h4>`;
+  html += `<p><b>Método:</b> ${d.metodo || '—'} | <b>Bebida:</b> ${d.bebida || 'agua segura'}</p>`;
+  // mostramos proporciones si existen (no “0” literal si no vinieron)
+  const pV = typeof prop.verduras_y_frutas === 'number' ? prop.verduras_y_frutas : '½';
+  const pP = typeof prop.proteinas === 'number' ? prop.proteinas : '¼';
+  const pC = typeof prop.cereales_tuberculos_legumbres === 'number' ? prop.cereales_tuberculos_legumbres : '¼';
+  html += `<p><b>Proporciones:</b> verduras/frutas ${pV}, proteínas ${pP}, cereales/tubérculos ${pC}</p>`;
+
+  if (d.porciones_orientativas) {
+    const po = d.porciones_orientativas;
+    html += `<p><b>Porciones orientativas:</b> 
+      proteínas: ${po.proteinas || '—'}, 
+      cereales/tubérculos: ${po.cereales_tuberculos_legumbres || '—'}, 
+      verduras/frutas: ${po.verduras_y_frutas || '—'}
+    </p>`;
+  }
+
+  if (ing.length)   html += `<p><b>Ingredientes:</b> ${ing.join(', ')}</p>`;
+  if (pasos.length) html += `<ol>${pasos.map(p => `<li>${p}</li>`).join('')}</ol>`;
+  if (alt.length)   html += `<p><b>Alternativas:</b> ${alt.join(' ')}</p>`;
+
+  if (obj.consejos) {
+    html += `<p><b>Consejos:</b> sodio: ${obj.consejos.sodio || '—'} | azúcar: ${obj.consejos.azucar || '—'} | higiene: ${obj.consejos.higiene || '—'}</p>`;
+  }
+  if (obj.justificacion_breve) html += `<blockquote>${obj.justificacion_breve}</blockquote>`;
+
+  return html;
+}
+
 // --- Pantry helper ---
-// Extractor muy simple: separa por comas y limpia.
-// Si querés algo más fino, reemplazá por tu UI de checkboxes o chips.
+// Muy simple: separa por comas; reemplazalo por UI de chips/checkboxes si querés.
 function guessPantryFromText(text = '') {
   return text
     .split(',')
@@ -84,7 +128,6 @@ $userForm?.addEventListener('submit', (e) => {
 
   userProfile = { edad, sexo, pesoKg, alturaCm: alturaC, imc };
 
-  // Mostrar el chat y feedback
   if ($chatBox) $chatBox.style.display = 'flex';
   addMsg(`✅ Perfil guardado. Edad: ${edad}, Sexo: ${sexo || '—'}, Peso: ${pesoKg} kg, Altura: ${alturaC} cm, IMC: ${imc}`, 'bot');
 });
@@ -98,13 +141,12 @@ $form?.addEventListener('submit', async (e) => {
   addMsg(text, 'user');
   $input.value = '';
 
-  // Detección simple de pantry desde el texto (podés reemplazarlo por tu UI)
+  // Detección naive de pantry desde el texto
   const pantryDetected = guessPantryFromText(text);
-  // Si no detectamos nada en este turno, reutilizamos la última lista (si existe)
   const pantry = pantryDetected.length ? pantryDetected : lastPantry;
   lastPantry = pantry;
 
-  // Placeholder de “pensando…”
+  // Placeholder “pensando…”
   const thinking = addMsg('Pensando…', 'bot');
 
   const payload = {
@@ -112,8 +154,8 @@ $form?.addEventListener('submit', async (e) => {
     sessionId,
     context: {
       page: location.pathname,
-      profile: userProfile, // puede venir vacío si no completaron el form
-      pantry                  // array de strings
+      profile: userProfile, // puede estar vacío si no completaron el form
+      pantry                    // array de strings
     }
   };
 
@@ -124,7 +166,7 @@ $form?.addEventListener('submit', async (e) => {
       body: JSON.stringify(payload)
     });
 
-    const ct = r.headers.get('content-type') || '';
+    const ct = (r.headers.get('content-type') || '').toLowerCase();
     let data;
     if (ct.includes('application/json')) {
       data = await r.json();
@@ -133,19 +175,26 @@ $form?.addEventListener('submit', async (e) => {
       try { data = JSON.parse(t); } catch { data = { reply: t }; }
     }
 
-    const obj  = Array.isArray(data) ? data[0] : data;
-    const html = renderBotMessage(obj);
-    thinking.innerHTML = html;
+    // Normalización de respuesta: soporta {…}, {output:{…}}, [{…}], [{output:{…}}]
+    const obj = Array.isArray(data)
+      ? (data[0]?.output ?? data[0])
+      : (data?.output ?? data);
+
+    // Renderer Nutriado primero; si vacío, fallback al renderer legacy
+    const htmlNutriado = renderNutriado(obj);
+    if (htmlNutriado) thinking.innerHTML = htmlNutriado;
+    else thinking.innerHTML = renderBotMessage(obj);
   } catch (err) {
     console.error(err);
     thinking.textContent = '💥 Error hablando con el asistente.';
   }
 });
 
-// --- UX: Enter envía, Shift+Enter hace salto de línea (si el input es <textarea>) ---
+// --- UX: Enter envía (en inputs de una línea); Shift+Enter para salto (si es textarea) ---
 $input?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     $form?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
   }
 });
+</script>
