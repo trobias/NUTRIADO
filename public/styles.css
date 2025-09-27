@@ -307,3 +307,100 @@ body{
   background: #218838;
 }
 
+/* === Nutriado Chat — Tema Claro Embebido === */
+#nutriado-chat.chat-embedded{
+  position: static;               /* entra en el flujo del layout */
+  width: 100%;
+  max-width: 720px;               /* alineado con tu contenido central */
+  margin: 1.5rem auto;            /* centrado */
+  background: #fff;
+  color: #212529;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.06);
+  display: flex;
+  flex-direction: column;
+}
+
+#nutriado-chat.chat-embedded .chat-header{
+  background: #fff;
+  color: var(--dark-gray);
+  padding: 12px 14px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border-color);
+}
+
+#nutriado-chat.chat-embedded .chat-log{
+  padding: 14px;
+  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  max-height: 46vh;               /* un toque más bajo que el flotante */
+  overflow: auto;
+  background: #fff;
+}
+
+#nutriado-chat.chat-embedded .msg{
+  background: #fff;
+  color: #212529;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  line-height: 1.45;
+  padding: 10px 12px;
+}
+
+#nutriado-chat.chat-embedded .msg.user{
+  background: #f3fbf5;            /* verde MUY claro */
+  border-color: #d7f0dc;
+}
+
+#nutriado-chat.chat-embedded .msg.bot{
+  background: #f8f9fa;            /* gris claro */
+  border-color: #e9ecef;
+}
+
+#nutriado-chat.chat-embedded .chat-form{
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background: #fff;
+  border-top: 1px solid var(--border-color);
+}
+
+#nutriado-chat.chat-embedded .chat-form input{
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+  background: #fff;
+  color: #212529;
+}
+
+#nutriado-chat.chat-embedded .chat-form input::placeholder{
+  color: #6c757d;
+}
+
+#nutriado-chat.chat-embedded .chat-form button{
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--primary-green);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter .15s ease;
+}
+
+#nutriado-chat.chat-embedded .chat-form button:hover{
+  filter: brightness(0.95);
+}
+
+/* En pantallas chicas: ocupa todo el ancho del contenedor */
+@media (max-width: 480px){
+  #nutriado-chat.chat-embedded{
+    max-width: 100%;
+    margin: 1rem auto;
+  }
+}
+
+
