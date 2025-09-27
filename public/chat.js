@@ -76,13 +76,14 @@ function setChatEnabled(on) {
 
 function ensureChatBelowIMC() {
   if (!$chatBox) return;
-  // Sacamos la clase "chat" para que NO aplique el estilo flotante (#nutriado-chat.chat {...})
-  $chatBox.classList.remove('chat');
-  // Aseguramos layout centrado bajo el formulario
-  $chatBox.classList.add('chat-center');
-  // Lo mostramos
+  // NO flotante
+  $chatBox.classList.remove('chat');        // quita el look oscuro flotante
+  // Modo embebido claro + centrado en el flujo de la página
+  $chatBox.classList.add('chat-center', 'chat-embedded');
+  // Mostrar
   $chatBox.style.display = 'flex';
 }
+
 
 function unlockChat(profile = {}) {
   // Normaliza y guarda
@@ -218,3 +219,4 @@ $input?.addEventListener('keydown', (e) => {
     $form?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
   }
 });
+
