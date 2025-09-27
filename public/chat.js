@@ -6,7 +6,7 @@ const $form  = document.getElementById('chat-form');
 const $input = document.getElementById('chat-input');
 
 const $userForm = document.getElementById('user-form'); // form de perfil (edad/sexo/peso/altura)
-const $chatBox  = document.getElementById('nutriado-chat'); // contenedor del chat (lo mostramos después de guardar perfil)
+const $chatBox  = document.getElementById('nutriado-chat'); // contenedor del chat (lo mostramos debajo del IMC)
 
 // --- Session ---
 const sessionId = (() => {
@@ -39,7 +39,8 @@ function renderBotMessage(data) {
   let html = '';
 
   if (obj.reply) {
-    html += `<p>${obj.reply}</p>`;
+    // reply puede venir en HTML desde n8n
+    html += `<div class="reply-block">${obj.reply}</div>`;
   }
 
   if (obj.recetas && obj.recetas.length) {
@@ -61,6 +62,60 @@ function renderBotMessage(data) {
   return html || 'Sin respuesta';
 }
 
+// --- Bloqueo/Desbloqueo del chat y posición bajo el IMC ---
+function setChatEnabled(on) {
+  const btn = $form?.querySelector('button');
+  if (btn) btn.disabled = !on;
+  if ($input) {
+    $input.disabled = !on;
+    $input.placeholder = on
+      ? 'Contame qué tenés en la heladera...'
+      : 'Completa tu perfil (IMC) para chatear';
+  }
+}
+
+function ensureChatBelowIMC() {
+  if (!$chatBox) return;
+  // Sacamos la clase "chat" para que NO aplique el estilo flotante (#nutriado-chat.chat {...})
+  $chatBox.classList.remove('chat');
+  // Aseguramos layout centrado bajo el formulario
+  $chatBox.classList.add('chat-center');
+  // Lo mostramos
+  $chatBox.style.display = 'flex';
+}
+
+function unlockChat(profile = {}) {
+  // Normaliza y guarda
+  userProfile = {
+    edad: Number(profile.edad) || 0,
+    sexo: profile.sexo || '',
+    pesoKg: Number(profile.pesoKg ?? profile.peso) || 0,
+    alturaCm: Number(profile.alturaCm ?? profile.altura) || 0,
+    imc: Number(profile.imc) || 0,
+  };
+  if (userProfile.imc > 0) {
+    ensureChatBelowIMC();
+    setChatEnabled(true);
+  }
+}
+
+// Al cargar: bloqueado y oculto (quedará visible al desbloquear)
+setChatEnabled(false);
+
+// Si el index.html ya calculó y expuso un perfil global, úsalo
+if (window.__nutriadoProfile && Number(window.__nutriadoProfile.imc) > 0) {
+  unlockChat(window.__nutriadoProfile);
+}
+
+// También escuchamos el evento que dispara index.html tras calcular IMC
+window.addEventListener('nutriado:profile:ready', (e) => {
+  unlockChat(e.detail || {});
+  // feedback opcional
+  if (userProfile?.imc > 0) {
+    addMsg(`✅ Perfil listo. IMC: ${userProfile.imc}`, 'bot');
+  }
+});
+
 // --- Pantry helper ---
 // Extractor muy simple: separa por comas y limpia.
 // Si querés algo más fino, reemplazá por tu UI de checkboxes o chips.
@@ -73,6 +128,8 @@ function guessPantryFromText(text = '') {
 }
 
 // --- Perfil (captura y cálculo de IMC) ---
+// Si enviás el perfil desde index.html ya no es obligatorio este handler,
+// pero lo dejamos para soportar páginas donde no está ese script.
 $userForm?.addEventListener('submit', (e) => {
   e.preventDefault();
   const edad    = parseInt(document.getElementById('edad').value, 10) || 0;
@@ -82,16 +139,28 @@ $userForm?.addEventListener('submit', (e) => {
   const alturaM = alturaC / 100;
   const imc     = alturaM > 0 ? +(pesoKg / (alturaM * alturaM)).toFixed(1) : 0;
 
-  userProfile = { edad, sexo, pesoKg, alturaCm: alturaC, imc };
+  unlockChat({ edad, sexo, pesoKg, alturaCm: alturaC, imc });
 
-  // Mostrar el chat y feedback
-  if ($chatBox) $chatBox.style.display = 'flex';
-  addMsg(`✅ Perfil guardado. Edad: ${edad}, Sexo: ${sexo || '—'}, Peso: ${pesoKg} kg, Altura: ${alturaC} cm, IMC: ${imc}`, 'bot');
+  if (userProfile?.imc > 0) {
+    addMsg(`✅ Perfil guardado. Edad: ${edad}, Sexo: ${sexo || '—'}, Peso: ${pesoKg} kg, Altura: ${alturaC} cm, IMC: ${imc}`, 'bot');
+    // Emitimos también el evento por si otra parte del sitio lo usa
+    const ev = new CustomEvent('nutriado:profile:ready', { detail: userProfile });
+    window.dispatchEvent(ev);
+  } else {
+    addMsg('⚠️ Revisá los datos del perfil para calcular el IMC.', 'bot');
+  }
 });
 
 // --- Envío de mensajes ---
 $form?.addEventListener('submit', async (e) => {
   e.preventDefault();
+
+  // Guardia: no permitir chatear sin IMC
+  if (!userProfile?.imc || userProfile.imc <= 0) {
+    addMsg('⚠️ Primero completá tu perfil y calculá tu IMC.', 'bot');
+    return;
+  }
+
   const text = ($input.value || '').trim();
   if (!text) return;
 
@@ -112,7 +181,7 @@ $form?.addEventListener('submit', async (e) => {
     sessionId,
     context: {
       page: location.pathname,
-      profile: userProfile, // puede venir vacío si no completaron el form
+      profile: userProfile, // puede venir vacío si no completaron el form, pero acá ya lo validamos
       pantry                  // array de strings
     }
   };
