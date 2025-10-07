@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comprar | Nutriado</title>
-    <link rel="stylesheet" href="styles.css">
+    <!-- Corregida ruta del CSS con barra inicial -->
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <header class="header">
@@ -12,10 +13,10 @@
             <div class="nav-container">
                 <div class="nav-logo">Nutr<span class="ia-highlight">ia</span>do</div>
                 <ul class="nav-menu">
-                    <li><a href="index.html" class="nav-link">Inicio</a></li>
-                    <li><a href="listado_tabla.html" class="nav-link">Tabla de productos</a></li>
-                    <li><a href="listado_box.html" class="nav-link">Tarjetas de productos</a></li>
-                    <li><a href="comprar.html" class="nav-link active">Comprar</a></li>
+                    <!-- Corregidas todas las rutas con barra inicial -->
+                    <li><a href="/index.html" class="nav-link">Inicio</a></li>
+                    <li><a href="/productos.html" class="nav-link">Productos</a></li>
+                    <li><a href="/comprar.html" class="nav-link active">Comprar</a></li>
                 </ul>
             </div>
         </nav>
@@ -53,6 +54,7 @@
                             <textarea id="direccion" name="direccion" rows="3" required placeholder="Calle, número, colonia, ciudad, código postal"></textarea>
                         </div>
                     </div>
+
                     <div class="form-section">
                         <h2>Productos Seleccionados</h2>
                         <div class="form-group">
@@ -149,16 +151,18 @@
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-links">
-                <a href="index.html">Inicio</a>
-                <a href="listado_tabla.html">Productos</a>
-                <a href="comprar.html">Comprar</a>
-                <a href="index.html#contacto">Contacto</a>
+                <!-- Corregidas rutas del footer -->
+                <a href="/index.html">Inicio</a>
+                <a href="/productos.html">Productos</a>
+                <a href="/comprar.html">Comprar</a>
+                <a href="/index.html#contacto">Contacto</a>
             </div>
             <div class="footer-info">
                 <p>&copy; 2025 Nutriado. Todos los derechos reservados.</p>
             </div>
         </div>
     </footer>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const checkboxes = document.querySelectorAll('input[name="productos"]');
@@ -191,10 +195,8 @@
                 checkbox.addEventListener('change', updateTotal);
             });
 
-            // Initialize
             updateTotal();
 
-            // Form submission
             document.getElementById('purchase-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 const selectedProducts = Array.from(checkboxes)
