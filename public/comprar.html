@@ -10,11 +10,11 @@
     <header class="header">
         <nav class="nav">
             <div class="nav-container">
-                <div class="nav-logo">Nutriado</div>
+                <div class="nav-logo">Nutr<span class="ia-highlight">ia</span>do</div>
                 <ul class="nav-menu">
                     <li><a href="index.html" class="nav-link">Inicio</a></li>
-                    <li><a href="listado_tabla.html" class="nav-link">Productos (Tabla)</a></li>
-                    <li><a href="listado_box.html" class="nav-link">Productos (Grid)</a></li>
+                    <li><a href="listado_tabla.html" class="nav-link">Tabla de productos</a></li>
+                    <li><a href="listado_box.html" class="nav-link">Tarjetas de productos</a></li>
                     <li><a href="comprar.html" class="nav-link active">Comprar</a></li>
                 </ul>
             </div>
@@ -27,7 +27,7 @@
                 <h1>Finalizar Compra</h1>
                 <p class="section-subtitle">Completa tus datos para procesar tu pedido</p>
 
-                <form class="purchase-form">
+                <form class="purchase-form" id="purchase-form">
                     <div class="form-section">
                         <h2>Información Personal</h2>
                         <div class="form-group">
@@ -54,11 +54,60 @@
                         </div>
                     </div>
 
+                     Replaced textarea with multi-select checkboxes 
                     <div class="form-section">
                         <h2>Productos Seleccionados</h2>
                         <div class="form-group">
-                            <label for="productos">Lista de Productos</label>
-                            <textarea id="productos" name="productos" rows="4" placeholder="Ej: Proteína Vegetal Premium x1, Multivitamínico Natural x2"></textarea>
+                            <label>Selecciona los productos que deseas comprar:</label>
+                            <div class="product-selection" id="product-selection">
+                                <label class="product-checkbox-item">
+                                    <input type="checkbox" name="productos" value="Batido Proteico de Vainilla" data-price="24.99">
+                                    <span class="product-checkbox-label">
+                                        <span class="product-name">Batido Proteico de Vainilla</span>
+                                        <span class="product-price-small">$24.99</span>
+                                    </span>
+                                </label>
+                                
+                                <label class="product-checkbox-item">
+                                    <input type="checkbox" name="productos" value="Barritas Energéticas de Avena" data-price="12.99">
+                                    <span class="product-checkbox-label">
+                                        <span class="product-name">Barritas Energéticas de Avena</span>
+                                        <span class="product-price-small">$12.99</span>
+                                    </span>
+                                </label>
+                                
+                                <label class="product-checkbox-item">
+                                    <input type="checkbox" name="productos" value="Smoothie Verde Detox" data-price="18.99">
+                                    <span class="product-checkbox-label">
+                                        <span class="product-name">Smoothie Verde Detox</span>
+                                        <span class="product-price-small">$18.99</span>
+                                    </span>
+                                </label>
+                                
+                                <label class="product-checkbox-item">
+                                    <input type="checkbox" name="productos" value="Mix de Frutos Secos Premium" data-price="15.99">
+                                    <span class="product-checkbox-label">
+                                        <span class="product-name">Mix de Frutos Secos Premium</span>
+                                        <span class="product-price-small">$15.99</span>
+                                    </span>
+                                </label>
+                                
+                                <label class="product-checkbox-item">
+                                    <input type="checkbox" name="productos" value="Ensalada César Fitness" data-price="9.99">
+                                    <span class="product-checkbox-label">
+                                        <span class="product-name">Ensalada César Fitness</span>
+                                        <span class="product-price-small">$9.99</span>
+                                    </span>
+                                </label>
+                                
+                                <label class="product-checkbox-item">
+                                    <input type="checkbox" name="productos" value="Bowl de Quinoa y Vegetales" data-price="11.99">
+                                    <span class="product-checkbox-label">
+                                        <span class="product-name">Bowl de Quinoa y Vegetales</span>
+                                        <span class="product-price-small">$11.99</span>
+                                    </span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -80,15 +129,15 @@
                             <h3>Resumen del Pedido</h3>
                             <div class="summary-line">
                                 <span>Subtotal:</span>
-                                <span>$49.98</span>
+                                <span id="subtotal">$0.00</span>
                             </div>
                             <div class="summary-line">
                                 <span>Envío:</span>
-                                <span>$5.99</span>
+                                <span id="shipping">$5.99</span>
                             </div>
                             <div class="summary-line total">
                                 <span>Total:</span>
-                                <span>$55.97</span>
+                                <span id="total">$5.99</span>
                             </div>
                         </div>
                     </div>
@@ -105,13 +154,65 @@
                 <a href="index.html">Inicio</a>
                 <a href="listado_tabla.html">Productos</a>
                 <a href="comprar.html">Comprar</a>
-                <a href="#contacto">Contacto</a>
+                <a href="index.html#contacto">Contacto</a>
             </div>
             <div class="footer-info">
-                <p>&copy; 2024 Nutriado. Todos los derechos reservados.</p>
-                <p><a href="#git-repo">Repositorio Git</a> | <a href="#pdf-analysis">Análisis y Diseño PDF</a></p>
+                <p>&copy; 2025 Nutriado. Todos los derechos reservados.</p>
             </div>
         </div>
     </footer>
+
+     Adding JavaScript for dynamic price calculation 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('input[name="productos"]');
+            const subtotalEl = document.getElementById('subtotal');
+            const shippingEl = document.getElementById('shipping');
+            const totalEl = document.getElementById('total');
+            const SHIPPING_COST = 5.99;
+
+            function updateTotal() {
+                let subtotal = 0;
+                checkboxes.forEach(checkbox => {
+                    const item = checkbox.closest('.product-checkbox-item');
+                    if (checkbox.checked) {
+                        subtotal += parseFloat(checkbox.dataset.price);
+                        item.classList.add('selected');
+                    } else {
+                        item.classList.remove('selected');
+                    }
+                });
+
+                const shipping = subtotal > 0 ? SHIPPING_COST : 0;
+                const total = subtotal + shipping;
+
+                subtotalEl.textContent = '$' + subtotal.toFixed(2);
+                shippingEl.textContent = '$' + shipping.toFixed(2);
+                totalEl.textContent = '$' + total.toFixed(2);
+            }
+
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateTotal);
+            });
+
+            // Initialize
+            updateTotal();
+
+            // Form submission
+            document.getElementById('purchase-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const selectedProducts = Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+                
+                if (selectedProducts.length === 0) {
+                    alert('Por favor selecciona al menos un producto');
+                    return;
+                }
+
+                alert('¡Compra confirmada! Productos: ' + selectedProducts.join(', '));
+            });
+        });
+    </script>
 </body>
 </html>
