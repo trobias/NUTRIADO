@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productos | Nutriado</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-container">
+                <div class="nav-logo">Nutr<span class="ia-highlight">ia</span>do</div>
+                <ul class="nav-menu">
+                    <li><a href="/index.html" class="nav-link">Inicio</a></li>
+                    <li><a href="/productos.html" class="nav-link active">Productos</a></li>
+                    <li><a href="/comprar.html" class="nav-link">Comprar</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main">
+        <section class="products-section">
+            <div class="container">
+                <h1>Catálogo de Productos</h1>
+                <p class="section-subtitle">Descubre nuestra selección de productos nutricionales</p>
+
+                 Botones para cambiar entre vista de tabla y tarjetas 
+                <div class="view-toggle">
+                    <button id="btn-cards" class="toggle-btn active" aria-label="Vista de tarjetas">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                        </svg>
+                        Tarjetas
+                    </button>
+                    <button id="btn-table" class="toggle-btn" aria-label="Vista de tabla">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                        Tabla
+                    </button>
+                </div>
+
+                 Vista de tarjetas (por defecto visible) 
+                <div id="cards-view" class="products-grid">
+                    <div class="product-card">
+                        <div class="product-image">
+                            <img src="/images/batido-proteico-vainilla.jpg" alt="Batido Proteico de Vainilla">
+                        </div>
+                        <div class="product-info">
+                            <h3>Batido Proteico de Vainilla</h3>
+                            <p class="product-category">Batidos</p>
+                            <p class="product-price">$24.99</p>
+                            <a href="/producto.html?id=1" class="btn-small">Ver más</a>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image">
+                            <img src="/images/barritas-avena.jpg" alt="Barritas Energéticas de Avena">
+                        </div>
+                        <div class="product-info">
+                            <h3>Barritas Energéticas de Avena</h3>
+                            <p class="product-category">Snacks Saludables</p>
+                            <p class="product-price">$12.99</p>
+                            <a href="/producto.html?id=2" class="btn-small">Ver más</a>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image">
+                            <img src="/images/smoothie-verde-detox.jpg" alt="Smoothie Verde Detox">
+                        </div>
+                        <div class="product-info">
+                            <h3>Smoothie Verde Detox</h3>
+                            <p class="product-category">Bebidas</p>
+                            <p class="product-price">$18.99</p>
+                            <a href="/producto.html?id=3" class="btn-small">Ver más</a>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image">
+                            <img src="/images/mix-frutos-secos.jpg" alt="Mix de Frutos Secos Premium">
+                        </div>
+                        <div class="product-info">
+                            <h3>Mix de Frutos Secos Premium</h3>
+                            <p class="product-category">Snacks Saludables</p>
+                            <p class="product-price">$15.99</p>
+                            <a href="/producto.html?id=4" class="btn-small">Ver más</a>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image">
+                            <img src="/images/ensalada-cesar-fitness.jpg" alt="Ensalada César Fitness">
+                        </div>
+                        <div class="product-info">
+                            <h3>Ensalada César Fitness</h3>
+                            <p class="product-category">Comidas Preparadas</p>
+                            <p class="product-price">$9.99</p>
+                            <a href="/producto.html?id=5" class="btn-small">Ver más</a>
+                        </div>
+                    </div>
+
+                    <div class="product-card">
+                        <div class="product-image">
+                            <img src="/images/bowl-quinoa-vegetales.jpg" alt="Bowl de Quinoa y Vegetales">
+                        </div>
+                        <div class="product-info">
+                            <h3>Bowl de Quinoa y Vegetales</h3>
+                            <p class="product-category">Comidas Preparadas</p>
+                            <p class="product-price">$11.99</p>
+                            <a href="/producto.html?id=6" class="btn-small">Ver más</a>
+                        </div>
+                    </div>
+                </div>
+
+                 Vista de tabla (oculta por defecto) 
+                <div id="table-view" class="table-container" style="display: none;">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre del Producto</th>
+                                <th>Categoría</th>
+                                <th>Precio</th>
+                                <th>Disponibilidad</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Batido Proteico de Vainilla</td>
+                                <td>Batidos</td>
+                                <td>$24.99</td>
+                                <td><span class="status available">Disponible</span></td>
+                                <td><a href="/producto.html?id=1" class="btn-small">Ver Más</a></td>
+                            </tr>
+                            <tr>
+                                <td>Barritas Energéticas de Avena</td>
+                                <td>Snacks Saludables</td>
+                                <td>$12.99</td>
+                                <td><span class="status available">Disponible</span></td>
+                                <td><a href="/producto.html?id=2" class="btn-small">Ver Más</a></td>
+                            </tr>
+                            <tr>
+                                <td>Smoothie Verde Detox</td>
+                                <td>Bebidas</td>
+                                <td>$18.99</td>
+                                <td><span class="status limited">Stock Limitado</span></td>
+                                <td><a href="/producto.html?id=3" class="btn-small">Ver Más</a></td>
+                            </tr>
+                            <tr>
+                                <td>Mix de Frutos Secos Premium</td>
+                                <td>Snacks Saludables</td>
+                                <td>$15.99</td>
+                                <td><span class="status available">Disponible</span></td>
+                                <td><a href="/producto.html?id=4" class="btn-small">Ver Más</a></td>
+                            </tr>
+                            <tr>
+                                <td>Ensalada César Fitness</td>
+                                <td>Comidas Preparadas</td>
+                                <td>$9.99</td>
+                                <td><span class="status unavailable">Agotado</span></td>
+                                <td><a href="/producto.html?id=5" class="btn-small">Ver Más</a></td>
+                            </tr>
+                            <tr>
+                                <td>Bowl de Quinoa y Vegetales</td>
+                                <td>Comidas Preparadas</td>
+                                <td>$11.99</td>
+                                <td><span class="status available">Disponible</span></td>
+                                <td><a href="/producto.html?id=6" class="btn-small">Ver Más</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="/index.html">Inicio</a>
+                <a href="/productos.html">Productos</a>
+                <a href="/comprar.html">Comprar</a>
+                <a href="/index.html#contacto">Contacto</a>
+            </div>
+            <div class="footer-info">
+                <p>&copy; 2025 Nutriado. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+     Script para alternar entre vistas 
+    <script>
+        const btnCards = document.getElementById('btn-cards');
+        const btnTable = document.getElementById('btn-table');
+        const cardsView = document.getElementById('cards-view');
+        const tableView = document.getElementById('table-view');
+
+        btnCards.addEventListener('click', () => {
+            cardsView.style.display = 'grid';
+            tableView.style.display = 'none';
+            btnCards.classList.add('active');
+            btnTable.classList.remove('active');
+        });
+
+        btnTable.addEventListener('click', () => {
+            cardsView.style.display = 'none';
+            tableView.style.display = 'block';
+            btnTable.classList.add('active');
+            btnCards.classList.remove('active');
+        });
+    </script>
+</body>
+</html>
