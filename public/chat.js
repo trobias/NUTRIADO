@@ -6,7 +6,7 @@ const $form  = document.getElementById('chat-form');
 const $input = document.getElementById('chat-input');
 
 const $userForm = document.getElementById('user-form'); // form de perfil (edad/sexo/peso/altura)
-const $chatBox  = document.getElementById('nutriado-chat'); // contenedor del chat (lo mostramos debajo del IMC)
+const $chatBox  = document.getElementById('nutriado-chat'); // contenedor del chat (debajo del IMC)
 
 // --- Session ---
 const sessionId = (() => {
@@ -29,37 +29,77 @@ function addMsg(content, who = 'bot', isHTML = false) {
   div.className = `msg ${who}`;
   if (isHTML) div.innerHTML = content;
   else div.textContent = content;
-  $log.appendChild(div);
-  $log.scrollTop = $log.scrollHeight;
+  $log?.appendChild(div);
+  if ($log) $log.scrollTop = $log.scrollHeight;
   return div;
 }
 
+// Unwrap tolerante para cualquier forma de respuesta
+function unwrap(x) {
+  if (!x) return {};
+  if (Array.isArray(x)) return unwrap(x[0]);
+  if (typeof x === 'string') return { reply: x };
+  if (x.json) return unwrap(x.json);
+  if (x.output) return unwrap(x.output);
+  return x;
+}
+
+// Renderizador robusto
 function renderBotMessage(data) {
-  const obj = Array.isArray(data) ? data[0] : data;
+  const o = unwrap(data);
   let html = '';
 
-  if (obj.reply) {
-    // reply puede venir en HTML desde n8n
-    html += `<div class="reply-block">${obj.reply}</div>`;
+  // 1) Si viene reply (HTML o texto), lo mostramos tal cual
+  if (typeof o.reply === 'string' && o.reply.trim()) {
+    return `<div class="reply-block">${o.reply}</div>`;
   }
 
-  if (obj.recetas && obj.recetas.length) {
-    html += `<h4>🍽️ Recetas sugeridas:</h4>`;
-    obj.recetas.forEach(r => {
-      html += `<div class="receta">
-        <b>${r.nombre || 'Receta'}</b>
-        <ul>${(r.ingredientes || []).map(i => `<li>${i}</li>`).join('')}</ul>
-        <ol>${(r.pasos || []).map(p => `<li>${p}</li>`).join('')}</ol>
-        <small>Macros: ${r.macros?.kcal ?? 0} kcal, ${r.macros?.prot ?? 0} g prot, ${r.macros?.carb ?? 0} g carb, ${r.macros?.gras ?? 0} g gras</small>
-      </div>`;
-    });
+  // 2) Si no hay reply pero sí estructura normalizada/dish, armamos HTML básico
+  const d = o.normalized?.dish || o.dish;
+  if (d) {
+    const ul = arr =>
+      Array.isArray(arr) && arr.length
+        ? `<ul>${arr.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`
+        : '';
+    const ol = arr =>
+      Array.isArray(arr) && arr.length
+        ? `<ol>${arr.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ol>`
+        : '';
+    const prop = d.proporciones || {};
+    html += `<h4>🍽️ ${escapeHtml(d.nombre || 'Plato sugerido')}</h4>`;
+    html += `<p><b>Método:</b> ${escapeHtml(d.metodo || 'plancha')} | <b>Bebida:</b> ${escapeHtml(d.bebida || 'agua segura')}</p>`;
+    if (prop.verduras_y_frutas || prop.proteinas || prop.cereales_tuberculos_legumbres) {
+      html += `<p><b>Proporciones:</b> verduras/frutas ${prop.verduras_y_frutas ?? '½'}, proteínas ${prop.proteinas ?? '¼'}, cereales/tubérculos ${prop.cereales_tuberculos_legumbres ?? '¼'}</p>`;
+    }
+    if (Array.isArray(d.ingredientes_usados) && d.ingredientes_usados.length) {
+      html += `<p><b>Ingredientes:</b></p>${ul(d.ingredientes_usados)}`;
+    }
+    html += ol(d.pasos || []);
+
+    if (Array.isArray(o.alternativas_si_falta_algo) && o.alternativas_si_falta_algo.length) {
+      html += `<h5>Alternativas</h5>${ul(o.alternativas_si_falta_algo)}`;
+    }
+    if (o.consejos && (o.consejos.sodio || o.consejos.azucar || o.consejos.higiene)) {
+      html += `<h5>Consejos</h5><ul>${
+        ['sodio','azucar','higiene']
+          .map(k => o.consejos[k] ? `<li><b>${k}:</b> ${escapeHtml(o.consejos[k])}</li>` : '')
+          .join('')
+      }</ul>`;
+    }
   }
 
-  if (obj.compras && obj.compras.length) {
-    html += `<h4>🛒 Podrías comprar:</h4><ul>${obj.compras.map(c => `<li>${c}</li>`).join('')}</ul>`;
+  // 3) Última red: mostramos JSON legible o “Sin respuesta”
+  if (!html) {
+    try { html = `<pre>${escapeHtml(JSON.stringify(o, null, 2))}</pre>`; }
+    catch { html = 'Sin respuesta'; }
   }
+  return html;
+}
 
-  return html || 'Sin respuesta';
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
 }
 
 // --- Bloqueo/Desbloqueo del chat y posición bajo el IMC ---
@@ -76,14 +116,13 @@ function setChatEnabled(on) {
 
 function ensureChatBelowIMC() {
   if (!$chatBox) return;
-  // NO flotante
-  $chatBox.classList.remove('chat');        // quita el look oscuro flotante
-  // Modo embebido claro + centrado en el flujo de la página
+  // Quita look flotante oscuro si existiera
+  $chatBox.classList.remove('chat');
+  // Modo embebido claro + centrado en el flujo
   $chatBox.classList.add('chat-center', 'chat-embedded');
   // Mostrar
   $chatBox.style.display = 'flex';
 }
-
 
 function unlockChat(profile = {}) {
   // Normaliza y guarda
@@ -100,26 +139,24 @@ function unlockChat(profile = {}) {
   }
 }
 
-// Al cargar: bloqueado y oculto (quedará visible al desbloquear)
+// Al cargar: bloqueado
 setChatEnabled(false);
 
-// Si el index.html ya calculó y expuso un perfil global, úsalo
+// Si el index.html ya expuso el perfil global, usarlo
 if (window.__nutriadoProfile && Number(window.__nutriadoProfile.imc) > 0) {
   unlockChat(window.__nutriadoProfile);
 }
 
-// También escuchamos el evento que dispara index.html tras calcular IMC
+// Escucha del evento posterior al cálculo del IMC en index.html
 window.addEventListener('nutriado:profile:ready', (e) => {
   unlockChat(e.detail || {});
-  // feedback opcional
   if (userProfile?.imc > 0) {
     addMsg(`✅ Perfil listo. IMC: ${userProfile.imc}`, 'bot');
   }
 });
 
 // --- Pantry helper ---
-// Extractor muy simple: separa por comas y limpia.
-// Si querés algo más fino, reemplazá por tu UI de checkboxes o chips.
+// Partimos solo por COMAS (no por espacios) para respetar frases como "esencia de vainilla".
 function guessPantryFromText(text = '') {
   return text
     .split(',')
@@ -128,15 +165,13 @@ function guessPantryFromText(text = '') {
     .map(s => s.toLowerCase());
 }
 
-// --- Perfil (captura y cálculo de IMC) ---
-// Si enviás el perfil desde index.html ya no es obligatorio este handler,
-// pero lo dejamos para soportar páginas donde no está ese script.
+// --- Perfil (fallback si no usás el script del index) ---
 $userForm?.addEventListener('submit', (e) => {
   e.preventDefault();
-  const edad    = parseInt(document.getElementById('edad').value, 10) || 0;
-  const sexo    = (document.getElementById('sexo').value || '').trim();
-  const pesoKg  = parseFloat(document.getElementById('peso').value) || 0;
-  const alturaC = parseFloat(document.getElementById('altura').value) || 0; // cm
+  const edad    = parseInt(document.getElementById('edad')?.value, 10) || 0;
+  const sexo    = (document.getElementById('sexo')?.value || '').trim();
+  const pesoKg  = parseFloat(document.getElementById('peso')?.value) || 0;
+  const alturaC = parseFloat(document.getElementById('altura')?.value) || 0; // cm
   const alturaM = alturaC / 100;
   const imc     = alturaM > 0 ? +(pesoKg / (alturaM * alturaM)).toFixed(1) : 0;
 
@@ -144,7 +179,7 @@ $userForm?.addEventListener('submit', (e) => {
 
   if (userProfile?.imc > 0) {
     addMsg(`✅ Perfil guardado. Edad: ${edad}, Sexo: ${sexo || '—'}, Peso: ${pesoKg} kg, Altura: ${alturaC} cm, IMC: ${imc}`, 'bot');
-    // Emitimos también el evento por si otra parte del sitio lo usa
+    // Emitimos evento por si otras partes lo usan
     const ev = new CustomEvent('nutriado:profile:ready', { detail: userProfile });
     window.dispatchEvent(ev);
   } else {
@@ -156,21 +191,20 @@ $userForm?.addEventListener('submit', (e) => {
 $form?.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  // Guardia: no permitir chatear sin IMC
+  // Guardia: no chatear sin IMC válido
   if (!userProfile?.imc || userProfile.imc <= 0) {
     addMsg('⚠️ Primero completá tu perfil y calculá tu IMC.', 'bot');
     return;
   }
 
-  const text = ($input.value || '').trim();
+  const text = ($input?.value || '').trim();
   if (!text) return;
 
   addMsg(text, 'user');
-  $input.value = '';
+  if ($input) $input.value = '';
 
-  // Detección simple de pantry desde el texto (podés reemplazarlo por tu UI)
+  // Pantry por comas (o reusa última)
   const pantryDetected = guessPantryFromText(text);
-  // Si no detectamos nada en este turno, reutilizamos la última lista (si existe)
   const pantry = pantryDetected.length ? pantryDetected : lastPantry;
   lastPantry = pantry;
 
@@ -182,7 +216,7 @@ $form?.addEventListener('submit', async (e) => {
     sessionId,
     context: {
       page: location.pathname,
-      profile: userProfile, // puede venir vacío si no completaron el form, pero acá ya lo validamos
+      profile: userProfile, // ya validado
       pantry                  // array de strings
     }
   };
@@ -203,8 +237,9 @@ $form?.addEventListener('submit', async (e) => {
       try { data = JSON.parse(t); } catch { data = { reply: t }; }
     }
 
-    const obj  = Array.isArray(data) ? data[0] : data;
-    const html = renderBotMessage(obj);
+    console.debug('[Nutriado] IA RAW →', data); // debug útil
+
+    const html = renderBotMessage(data);
     thinking.innerHTML = html;
   } catch (err) {
     console.error(err);
@@ -219,4 +254,3 @@ $input?.addEventListener('keydown', (e) => {
     $form?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
   }
 });
-
