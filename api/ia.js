@@ -13,7 +13,7 @@ Si en la entrada recibís output_mode: "html_3_secciones", devolvé SOLO HTML (s
 
 - Solo con lo que tenés: receta usando estrictamente la pantry. Si hace falta quitar o reducir 1 ingrediente, decilo explícito (“te saqué X porque…”).
 - Con ajustes mínimos: mismo plato pero mejor balanceado (½–¼–¼) quitando/reduciendo 1 cosa o cambiando la técnica. Explicá el porqué.
-- Para dejarlo perfecto (compras): lista corta de compras recomendadas y el plato equilibrado ideal usando lo disponible + esas compras (½ verduras/frutas, ¼ proteínas, ¼ cereales/tubérculos/legumbres y similares).
+- Para dejarlo perfecto (compras): lista corta de compras recomendadas y el plato equilibrado ideal usando lo disponible + esas compras (½ verduras/frutas, ¼ proteínas, ¼ cereales/tuberculos/legumbres y similares).
 Notas: dividí ingredientes solo por comas; “esencia de vainilla” es un ingrediente. Podés usar comodines implícitos (agua, sal mínima, pimienta, aceite vegetal, hierbas, ajo y similares) sin listarlos.
 
 Si NO recibís ese flag, devolvé SOLO el JSON del esquema de abajo.
@@ -104,16 +104,16 @@ export default async function handler(req, res) {
     // Siempre devolver el HTML estructurado
     const formattedResponse = `
       <h2>Receta con lo que tienes:</h2>
-      <p><strong>Plato:</strong> ${gres.response?.dish?.nombre || 'Plato no disponible'}</p>
+      <p><strong>Plato:</strong> ${gres.response.dish?.nombre || 'Plato no disponible'}</p>
       <ul>
-        <li><strong>Ingredientes:</strong> ${gres.response?.dish?.ingredientes_usados?.join(', ') || 'Ingredientes no disponibles'}</li>
-        <li><strong>Metodo:</strong> ${gres.response?.dish?.metodo || 'Método no disponible'}</li>
-        <li><strong>Bebida recomendada:</strong> ${gres.response?.dish?.bebida || 'Bebida no disponible'}</li>
+        <li><strong>Ingredientes:</strong> ${gres.response.dish?.ingredientes_usados?.join(', ') || 'Ingredientes no disponibles'}</li>
+        <li><strong>Metodo:</strong> ${gres.response.dish?.metodo || 'Método no disponible'}</li>
+        <li><strong>Bebida recomendada:</strong> ${gres.response.dish?.bebida || 'Bebida no disponible'}</li>
       </ul>
       <h2>Receta ajustada (mejor balanceada):</h2>
-      <p>${gres.response?.justificacion_breve || 'Justificación no disponible'}</p>
+      <p>${gres.response.justificacion_breve || 'Justificación no disponible'}</p>
       <h2>Lista de compras recomendadas:</h2>
-      <p>Si no tienes todos los ingredientes, considera comprar: ${gres.response?.alternativas_si_falta_algo?.join(', ') || 'No se requieren compras adicionales.'}</p>
+      <p>Si no tienes todos los ingredientes, considera comprar: ${gres.response.alternativas_si_falta_algo?.join(', ') || 'No se requieren compras adicionales.'}</p>
     `;
 
     return res.status(200).send(formattedResponse);
