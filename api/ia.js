@@ -2,16 +2,15 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"; // Asegúrate de instalar el SDK de Gemini
 
 // Configuración para Node.js en Vercel o tu servidor
-export const config = { runtime: "nodejs" };
+export const config = { runtime: 'nodejs' };
 
 // GOD_PROMPT que usabas en n8n, replicado aquí para Gemini
 const GOD_PROMPT = `
-Sos Nutriado, un recomendador nutricional argentino.
-Con sexo, edad, altura, peso, IMC, objetivo, nivel de actividad e ingredientes disponibles (pantry), producís una respuesta según el modo de salida.
+Sos Nutriado, un recomendador nutricional argentino. Con sexo, edad, altura, peso, IMC, objetivo, nivel de actividad e ingredientes disponibles (pantry), producís una respuesta según el modo de salida.
 
 Modo de salida (conmutador)
 
-Si en la entrada recibís output_mode: "html_3_secciones", devolvé SOLO HTML (sin texto fuera del HTML) con estas 3 secciones, en español rioplatense, claro y breve:
+Si en la entrada recibís output_mode: "html_2_secciones", devolvé SOLO HTML (sin texto fuera del HTML) con estas 2 secciones, en español rioplatense, claro y breve:
 
 - Solo con lo que tenés: receta usando estrictamente la pantry. Si hace falta quitar o reducir 1 ingrediente, decilo explícito (“te saqué X porque…”).
 - Con ajustes mínimos: mismo plato pero mejor balanceado (½–¼–¼) quitando/reduciendo 1 cosa o cambiando la técnica. Explicá el porqué.
@@ -38,154 +37,90 @@ Grupos:
 verduras_y_frutas = (tomate, lechuga, zanahoria, cebolla, morrón, acelga, espinaca, brócoli, zapallo/calabaza, frutas y similares)
 proteinas = (pollo sin piel, pescado, carne magra, cerdo magro, huevo, lentejas, garbanzos, porotos, tofu y similares)
 cereales_tuberculos_legumbres = (arroz, fideos, polenta, pan, papa, batata, avena, lentejas, garbanzos, porotos y similares)
-
-FORMATO ESTRICTO DE RESPUESTA (solo si NO hay output_mode: "html_3_secciones")
-
-Devolvé solo un objeto JSON válido que siga exactamente el esquema de abajo.
-No agregues texto fuera del JSON. No uses fences. No envuelvas en "output", "data" ni otras claves.
-Usá strings y numbers válidos; nada de NaN, Infinity, comentarios ni comas finales.
-Si falta algún dato, completá con null, "", [] o {} según corresponda.
-
-ESQUEMA (llenalo con valores concretos):
-
-{
-  "ok": boolean,
-  "profile": { "sexo": "m|f|x|null", "edad": number|null, "altura_cm": number|null, "peso_kg": number|null, "imc": number|null },
-  "pantry_detected": string[],
-  "groups_covered": string[], // ["verduras_y_frutas","proteinas","cereales_tuberculos_legumbres"]
-  "dish": {
-    "id": string,
-    "nombre": string,
-    "proporciones": { "verduras_y_frutas": number, "proteinas": number, "cereales_tuberculos_legumbres": number },
-    "porciones_orientativas": {
-      "proteinas": string,
-      "cereales_tuberculos_legumbres": string,
-      "verduras_y_frutas": string
-    },
-    "ingredientes_usados": string[],
-    "metodo": "hervido"|"vapor"|"plancha"|"horno",
-    "bebida": "agua segura",
-    "pasos": string[]
-  },
-  "alternativas_si_falta_algo": string[],
-  "consejos": { "sodio": string, "azucar": string, "higiene": string },
-  "justificacion_breve": string,
-  "memory_out": {
-    "last_dish_id": string,
-    "last_pantry": string[],
-    "likes": string[],
-    "dislikes": string[],
-    "banned": string[],
-    "updated_at": string // ISO8601
-  }
-}
-
-NORMA DE DECISIÓN (si hay ambigüedad)
-Elegí un plato que cubra los 3 grupos. Si solo hay 2, proponé 1 sustitución plausible.
-Si “carne” es genérico, asumí “carne magra” a la plancha/horno.
-Sin proteína animal: priorizá legumbres o huevo.
-Objetivo “bajar_peso”: cereal/tubérculo 0.20–0.25 del plato; proteína magra/legumbres; muchas verduras.
-Objetivo “subir_peso”: +10–20% cereal/tubérculo; proteína 1–1.5 palmas; 1 cda de aceite en crudo.
-Salida final:
-Si output_mode: "html_3_secciones" → SOLO HTML con las 3 secciones.
-En caso contrario → SOLO JSON del esquema.`;
-
-// Función para calcular el estado de salud según el IMC
-function calcularSaludIMC(imc) {
-  if (imc < 18.5) {
-    return 'Bajo peso. Es recomendable consultar a un nutricionista para mejorar tu alimentación.';
-  } else if (imc >= 18.5 && imc <= 24.9) {
-    return 'Saludable. Mantén una dieta equilibrada y ejercicio regular para mantenerte en forma.';
-  } else if (imc >= 25 && imc <= 29.9) {
-    return 'Sobrepeso. Considera ajustar tu dieta y aumentar la actividad física para mejorar tu salud.';
-  } else {
-    return 'Obesidad. Es importante consultar a un médico o nutricionista para recibir orientación.';
-  }
-}
+`;
 
 // Handler que recibe el POST con los datos y los procesa
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Only POST allowed" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const input = req.body || {};
     const profile = input.context?.profile || {};
+    const pantryRaw = Array.isArray(input.context?.pantry) ? input.context.pantry : [];
+    const msgText = (input.message || "").toLowerCase().trim();
 
-    // Calcular el IMC
-    const imc = profile.imc || 0;
-    const estadoSalud = calcularSaludIMC(imc);
+    // Tokenización y normalización básica
+    const stop = new Set([
+      "hola", "buenas", "quiero", "necesito", "hacer", "con", "sin", "para", 
+      "una", "un", "el", "la", "las", "los", "de", "y", "verdura", "verduras"
+    ]);
 
-    // Crear respuesta consolidada con IMC, datos de perfil y evaluación de salud
-    const respuesta = `
-      ✅ Perfil listo. IMC: ${imc}
-      ✅ Perfil guardado. Edad: ${profile.edad}, Sexo: ${profile.sexo}, Peso: ${profile.peso_kg} kg, Altura: ${profile.altura_cm} cm.
-      ✅ Estado de salud según IMC: ${estadoSalud}
-    `;
+    const map = {
+      "morron": "morrón", "morrones": "morrón", "pimiento": "morrón", 
+      "pimenton": "morrón", "lechugas": "lechuga", "tomates": "tomate", 
+      "zanahorias": "zanahoria", "carne": "carne magra", "vacuna": "carne magra", 
+      "papas": "papa"
+    };
 
-    // Aquí agregas el esquema de receta si no se recibe output_mode
-    if (!input.output_mode || input.output_mode !== "html_3_secciones") {
-      const receta = {
-        ok: true,
-        profile: {
-          sexo: profile.sexo,
-          edad: profile.edad,
-          altura_cm: profile.altura_cm,
-          peso_kg: profile.peso_kg,
-          imc: profile.imc,
-        },
-        pantry_detected: input.context?.pantry || [],
-        groups_covered: ["verduras_y_frutas", "proteinas", "cereales_tuberculos_legumbres"],
-        dish: {
-          id: "tortilla_avena_jamon_lechuga", 
-          nombre: "Tortilla de Avena y Jamón con Ensalada Fresca",
-          proporciones: {
-            verduras_y_frutas: 0.5,
-            proteinas: 0.25,
-            cereales_tuberculos_legumbres: 0.25
-          },
-          porciones_orientativas: {
-            proteinas: "1 porción de jamón y queso (aprox. 50g) y 1 huevo mediano (comodín implícito)",
-            cereales_tuberculos_legumbres: "1/2 taza de avena",
-            verduras_y_frutas: "1 plato abundante de lechuga"
-          },
-          ingredientes_usados: ["avena", "jamon", "queso", "lechuga"],
-          metodo: "plancha",
-          bebida: "agua segura",
-          pasos: [
-            "En un bowl, mezclá la avena con un huevo (comodín implícito) y un poquito de agua o leche si tenés, hasta formar una pasta.",
-            "Cortá el jamón y el queso en trozos pequeños y agregalos a la mezcla de avena.",
-            "Calentá una sartén o plancha con un chorrito de aceite vegetal (comodín implícito) a fuego medio.",
-            "Vertí la mezcla en la sartén, extendiéndola para formar una tortilla. Cociná hasta que dore de ambos lados y esté cocida por dentro.",
-            "Mientras tanto, lavá bien la lechuga y cortala para preparar una ensalada fresca.",
-            "Serví la tortilla caliente acompañada de la ensalada de lechuga."
-          ]
-        },
-        alternativas_si_falta_algo: [],
-        consejos: {
-          sodio: "Evitá agregar sal extra a la ensalada y la tortilla, ya que el jamón y el queso aportan sodio.",
-          azucar: "Mantenete hidratado con agua segura durante el día, evitando por completo las bebidas azucaradas.",
-          higiene: "Siempre recordá lavar bien tus manos y todos los vegetales antes de manipularlos y consumirlos."
-        },
-        justificacion_breve: "Este plato utiliza la avena como fuente de cereales, el jamón y queso (más el huevo implícito) como proteínas, y la lechuga como verdura, logrando un equilibrio de ½ verdura, ¼ proteína y ¼ cereal, ideal para tu objetivo de regular peso y nivel de actividad.",
-        memory_out: {
-          last_dish_id: "tortilla_avena_jamon_lechuga",
-          last_pantry: ["pan", "queso", "jamon", "lechuga", "avena"],
-          likes: [],
-          dislikes: [],
-          banned: [],
-          updated_at: new Date().toISOString()
-        }
-      };
-
-      return res.status(200).json({ reply: respuesta, recipe: receta });
+    function tokenizePantry(arr, msg) {
+      const base = arr.length ? arr : [msg];
+      const text = base.join(" ").toLowerCase();
+      let toks = text.split(/[^a-záéíóúüñ0-9]+/i).filter(Boolean);
+      toks = toks.filter(t => !stop.has(t));
+      toks = toks.map(t => map[t] || t);
+      return Array.from(new Set(toks));
     }
 
-    // Si el flag es "html_3_secciones", devolvemos el HTML
-    return res.status(200).send(respuesta);  // Aquí ajustas para retornar solo el HTML si lo deseas
+    const pantry = tokenizePantry(pantryRaw, msgText);
+
+    // Crear el payload para la llamada a Google Gemini
+    const payload = {
+      instruction: "Generá un único plato equilibrado con lo disponible.",
+      profile: {
+        sexo: profile.sexo || null,
+        edad: profile.edad ?? null,
+        altura_cm: profile.alturaCm ?? null,
+        peso_kg: profile.pesoKg ?? null,
+        imc: profile.imc ?? null,
+        objetivo: profile.objetivo || "regular",
+        nivel_actividad: profile.nivel_actividad || "medio"
+      },
+      pantry,
+      text: msgText || input.message,
+      sessionId: input.sessionId || "anon"
+    };
+
+    // Llamada a Google Gemini (Flash 2.5)
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",  // Modelo sin versión específica
+      systemInstruction: GOD_PROMPT
+    });
+
+    const gres = await model.generateContent(JSON.stringify(payload));
+    const output = gres.response.text();  // Este es el resultado final en texto
+
+    // Si no hay output_mode, devolver siempre el JSON bien formateado
+    const formattedResponse = `
+      <h2>Receta con lo que tienes:</h2>
+      <p><strong>Plato:</strong> ${gres.response.dish.nombre}</p>
+      <ul>
+        <li><strong>Ingredientes:</strong> ${gres.response.dish.ingredientes_usados.join(', ')}</li>
+        <li><strong>Metodo:</strong> ${gres.response.dish.metodo}</li>
+        <li><strong>Bebida recomendada:</strong> ${gres.response.dish.bebida}</li>
+      </ul>
+      <h2>Receta ajustada (mejor balanceada):</h2>
+      <p>${gres.response.justificacion_breve}</p>
+      <h2>Lista de compras recomendadas:</h2>
+      <p>Si no tienes todos los ingredientes, considera comprar: ${gres.response.alternativas_si_falta_algo.join(', ')}</p>
+    `;
+
+    // Siempre devolver la receta en formato HTML
+    return res.status(200).send(formattedResponse);
 
   } catch (e) {
-    return res.status(500).json({ error: "Error al generar el perfil", detail: e.message });
+    return res.status(500).json({ error: 'IA error', detail: e.message });
   }
 }
