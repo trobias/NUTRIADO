@@ -101,18 +101,19 @@ export default async function handler(req, res) {
 
     const gres = await model.generateContent(JSON.stringify(payload));
 
+    // Asegurarnos que el response tiene la información adecuada y devolver el HTML
     const formattedResponse = `
       <h2>Receta con lo que tienes:</h2>
-      <p><strong>Plato:</strong> ${dish.nombre}</p>
+      <p><strong>Plato:</strong> ${gres.response?.dish?.nombre || 'Plato no disponible'}</p>
       <ul>
-        <li><strong>Ingredientes:</strong> ${dish.ingredientes_usados.join(', ')}</li>
-        <li><strong>Metodo:</strong> ${dish.metodo}</li>
-        <li><strong>Bebida recomendada:</strong> ${dish.bebida}</li>
+        <li><strong>Ingredientes:</strong> ${gres.response?.dish?.ingredientes_usados?.join(', ') || 'Ingredientes no disponibles'}</li>
+        <li><strong>Metodo:</strong> ${gres.response?.dish?.metodo || 'Método no disponible'}</li>
+        <li><strong>Bebida recomendada:</strong> ${gres.response?.dish?.bebida || 'Bebida no disponible'}</li>
       </ul>
       <h2>Receta ajustada (mejor balanceada):</h2>
-      <p>${gres.response.justificacion_breve}</p>
+      <p>${gres.response?.justificacion_breve || 'Justificación no disponible'}</p>
       <h2>Lista de compras recomendadas:</h2>
-      <p>Si no tienes todos los ingredientes, considera comprar: ${gres.response.alternativas_si_falta_algo.join(', ')}</p>
+      <p>Si no tienes todos los ingredientes, considera comprar: ${gres.response?.alternativas_si_falta_algo?.join(', ') || 'No se requieren compras adicionales.'}</p>
     `;
 
     return res.status(200).send(formattedResponse);
@@ -122,4 +123,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'IA error', detail: e.message });
   }
 }
-
