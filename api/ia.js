@@ -101,13 +101,6 @@ export default async function handler(req, res) {
 
     const gres = await model.generateContent(JSON.stringify(payload));
 
-    // Comprobamos si los datos de la respuesta son válidos
-    const dish = gres.response?.dish;
-
-    if (!dish || !dish.nombre) {
-      return res.status(500).json({ error: 'Datos de receta no disponibles' });
-    }
-
     const formattedResponse = `
       <h2>Receta con lo que tienes:</h2>
       <p><strong>Plato:</strong> ${dish.nombre}</p>
@@ -129,3 +122,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'IA error', detail: e.message });
   }
 }
+
