@@ -1,4 +1,3 @@
-// api/ia.js – Implementación de IA usando Google Gemini Flash 2.5 (sin n8n)
 import { GoogleGenerativeAI } from "@google/generative-ai"; // Asegúrate de instalar el SDK de Gemini
 
 // Configuración para Node.js en Vercel o tu servidor
@@ -37,54 +36,6 @@ Grupos:
 verduras_y_frutas = (tomate, lechuga, zanahoria, cebolla, morrón, acelga, espinaca, brócoli, zapallo/calabaza, frutas y similares)
 proteinas = (pollo sin piel, pescado, carne magra, cerdo magro, huevo, lentejas, garbanzos, porotos, tofu y similares)
 cereales_tuberculos_legumbres = (arroz, fideos, polenta, pan, papa, batata, avena, lentejas, garbanzos, porotos y similares)
-
-ESQUEMA (llenalo con valores concretos):
-
-{
-  "ok": true,
-  "profile": { 
-    "sexo": "m|f|x|null", 
-    "edad": number|null, 
-    "altura_cm": number|null, 
-    "peso_kg": number|null, 
-    "imc": number|null 
-  },
-  "pantry_detected": string[],
-  "groups_covered": string[], // ["verduras_y_frutas","proteinas","cereales_tuberculos_legumbres"]
-  "dish": {
-    "id": string,
-    "nombre": string,
-    "proporciones": { 
-      "verduras_y_frutas": number, 
-      "proteinas": number, 
-      "cereales_tuberculos_legumbres": number 
-    },
-    "porciones_orientativas": {
-      "proteinas": string,
-      "cereales_tuberculos_legumbres": string,
-      "verduras_y_frutas": string
-    },
-    "ingredientes_usados": string[],
-    "metodo": "hervido"|"vapor"|"plancha"|"horno",
-    "bebida": "agua segura",
-    "pasos": string[]
-  },
-  "alternativas_si_falta_algo": string[],
-  "consejos": { 
-    "sodio": string, 
-    "azucar": string, 
-    "higiene": string 
-  },
-  "justificacion_breve": string,
-  "memory_out": {
-    "last_dish_id": string,
-    "last_pantry": string[],
-    "likes": string[],
-    "dislikes": string[],
-    "banned": string[],
-    "updated_at": string // ISO8601
-  }
-}
 `;
 
 // Handler que recibe el POST con los datos y los procesa
@@ -150,8 +101,22 @@ export default async function handler(req, res) {
     const gres = await model.generateContent(JSON.stringify(payload));
     const output = gres.response.text();  // Este es el resultado final en texto
 
-    // Respuesta con el contenido generado
-    return res.status(200).json({ reply: output });
+    // Siempre devolver el HTML estructurado
+    const formattedResponse = `
+      <h2>Receta con lo que tienes:</h2>
+      <p><strong>Plato:</strong> ${gres.response?.dish?.nombre || 'Plato no disponible'}</p>
+      <ul>
+        <li><strong>Ingredientes:</strong> ${gres.response?.dish?.ingredientes_usados?.join(', ') || 'Ingredientes no disponibles'}</li>
+        <li><strong>Metodo:</strong> ${gres.response?.dish?.metodo || 'Método no disponible'}</li>
+        <li><strong>Bebida recomendada:</strong> ${gres.response?.dish?.bebida || 'Bebida no disponible'}</li>
+      </ul>
+      <h2>Receta ajustada (mejor balanceada):</h2>
+      <p>${gres.response?.justificacion_breve || 'Justificación no disponible'}</p>
+      <h2>Lista de compras recomendadas:</h2>
+      <p>Si no tienes todos los ingredientes, considera comprar: ${gres.response?.alternativas_si_falta_algo?.join(', ') || 'No se requieren compras adicionales.'}</p>
+    `;
+
+    return res.status(200).send(formattedResponse);
 
   } catch (e) {
     return res.status(500).json({ error: 'IA error', detail: e.message });
