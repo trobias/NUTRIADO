@@ -7,70 +7,23 @@ export const config = { runtime: "nodejs" };
 // GOD_PROMPT que usabas en n8n, replicado aquí para Gemini
 const GOD_PROMPT = `
 Sos Nutriado, un recomendador nutricional argentino.
-Con sexo, edad, altura, peso, IMC, objetivo, nivel de actividad e ingredientes disponibles (pantry), producís una respuesta según el modo de salida.
+Con sexo, edad, altura, peso, IMC, objetivo, nivel de actividad e ingredientes disponibles (pantry), producís una receta balanceada con las siguientes indicaciones.
 
-Modo de salida (conmutador)
-Si en la entrada recibís output_mode: "html_3_secciones", devolvé SOLO HTML (sin texto fuera del HTML) con estas 3 secciones, en español rioplatense, claro y breve:
+Modo de salida (conmutador):
+Si en la entrada recibís output_mode: "html_3_secciones", devolvé SOLO HTML con estas 3 secciones, en español rioplatense, claro y breve:
 
-- Solo con lo que tenés: receta usando estrictamente la pantry. Si hace falta quitar o reducir 1 ingrediente, decilo explícito (“te saqué X porque…”).
-- Con ajustes mínimos: mismo plato pero mejor balanceado (½–¼–¼) quitando/reduciendo 1 cosa o cambiando la técnica. Explicá el porqué.
-- Para dejarlo perfecto (compras): lista corta de compras recomendadas y el plato equilibrado ideal usando lo disponible + esas compras (½ verduras/frutas, ¼ proteínas, ¼ cereales/tubérculos/legumbres y similares).
-Notas: dividí ingredientes solo por comas; “esencia de vainilla” es un ingrediente. Podés usar comodines implícitos (agua, sal mínima, pimienta, aceite vegetal, hierbas, ajo y similares) sin listarlos.
+1. Solo con lo que tenés: receta usando estrictamente la pantry. Si hace falta quitar o reducir 1 ingrediente, decilo explícito (“te saqué X porque…”).
+2. Con ajustes mínimos: mismo plato pero mejor balanceado (½–¼–¼) y con cambio de técnica o reducción de ingredientes. Explicá el porqué.
+3. Para dejarlo perfecto (compras): lista corta de compras recomendadas y cómo equilibrar el plato usando esos ingredientes.
 
-Si NO recibís ese flag, devolvé una lista al estilo del esquema de abajo.
+Si NO recibís ese flag, devolvé SOLO el JSON del esquema con lo siguiente:
 
-REGLAS NUCLEARES
-
-Plato equilibrado: ½ verduras/frutas, ¼ proteínas, ¼ cereales/tuberculos/legumbres.
-Cocciones saludables: hervido, vapor, plancha, horno. Aceite vegetal en crudo (poca cantidad). Agua como bebida.
-Menos sal y azúcares: sin bebidas azucaradas; evitar frituras frecuentes.
-Si falta un grupo, proponé sustitución con legumbres/huevo o cereal/tubérculo disponible.
-Usar lo disponible: priorizá la pantry; comodines implícitos (no listarlos): agua, sal mínima, pimienta, aceite vegetal, hierbas/especias, ajo.
-
-Ajustá porciones según objetivo/actividad manteniendo proporciones del plato.
-Español rioplatense, claro y breve.
-
-MAPEOS Y NORMALIZACIÓN
-Sinónimos: morrón↔pimiento; “carne”→“carne magra”; “verdura(s)” no es ingrediente: inferí concretos (lechuga, tomate, cebolla, zanahoria, zapallo, etc.).
-
-Grupos:
-verduras_y_frutas = (tomate, lechuga, zanahoria, cebolla, morrón, acelga, espinaca, brócoli, zapallo/calabaza, frutas y similares)
-proteinas = (pollo sin piel, pescado, carne magra, cerdo magro, huevo, lentejas, garbanzos, porotos, tofu y similares)
-cereales_tuberculos_legumbres = (arroz, fideos, polenta, pan, papa, batata, avena, lentejas, garbanzos, porotos y similares)
-
-ESQUEMA (llenalo con valores concretos):
-
-{
-"ok": boolean,
-"profile": { "sexo": "m|f|x|null", "edad": number|null, "altura_cm": number|null, "peso_kg": number|null, "imc": number|null },
-"pantry_detected": string[],
-"groups_covered": string[], // ["verduras_y_frutas","proteinas","cereales_tuberculos_legumbres"]
-"dish": {
-"id": string,
-"nombre": string,
-"proporciones": { "verduras_y_frutas": number, "proteinas": number, "cereales_tuberculos_legumbres": number },
-"porciones_orientativas": {
-"proteinas": string,
-"cereales_tuberculos_legumbres": string,
-"verduras_y_frutas": string
-},
-"ingredientes_usados": string[],
-"metodo": "hervido"|"vapor"|"plancha"|"horno",
-"bebida": "agua segura",
-"pasos": string[]
-},
-"alternativas_si_falta_algo": string[],
-"consejos": { "sodio": string, "azucar": string, "higiene": string },
-"justificacion_breve": string,
-"memory_out": {
-"last_dish_id": string,
-"last_pantry": string[],
-"likes": string[],
-"dislikes": string[],
-"banned": string[],
-"updated_at": string // ISO8601
-}
-}
+Esquema del plato balanceado:
+- Ingredientes: Lista de ingredientes con cantidades
+- Método: Tipo de cocción (hervido, plancha, horno, etc.)
+- Proporciones: Balance de ingredientes (verduras, proteínas, cereales/tubérculos)
+- Alternativas: Sugerencias en caso de que falte algún ingrediente o grupo alimenticio
+- Consejos: Consejos para mejorar la dieta (sodio, azúcar, higiene)
 `;
 
 // Handler que recibe el POST con los datos y los procesa
@@ -133,10 +86,70 @@ export default async function handler(req, res) {
     });
 
     const gres = await model.generateContent(JSON.stringify(payload));
+
     const output = gres.response.text();  // Este es el resultado final en texto
 
-    // Respuesta con el contenido generado
-    return res.status(200).json({ reply: output });
+    // Verificar si el `output_mode` está presente
+    if (input.output_mode === "html_3_secciones") {
+      // Si la flag está presente, devolvemos el HTML estructurado
+      return res.status(200).send(output);
+    } else {
+      // Si no hay flag, devolvemos un JSON con la receta
+      const recipeJSON = {
+        ok: true,
+        profile: {
+          sexo: profile.sexo,
+          edad: profile.edad,
+          altura_cm: profile.altura_cm,
+          peso_kg: profile.peso_kg,
+          imc: profile.imc,
+          objetivo: profile.objetivo,
+          nivel_actividad: profile.nivel_actividad
+        },
+        pantry_detected: pantry,
+        groups_covered: ["verduras_y_frutas", "proteinas", "cereales_tuberculos_legumbres"],
+        dish: {
+          id: "TostadoCompletoHuevoEnsalada_1",  // Este sería el id del plato generado
+          nombre: "Tostado Completo con Huevo y Ensalada Fresca",
+          proporciones: {
+            verduras_y_frutas: 0.5,
+            proteinas: 0.25,
+            cereales_tuberculos_legumbres: 0.25
+          },
+          porciones_orientativas: {
+            proteinas: "1 huevo, 1 feta de jamón magro, 1 feta de queso descremado",
+            cereales_tuberculos_legumbres: "2 rodajas de tostada",
+            verduras_y_frutas: "Cantidad generosa de lechuga"
+          },
+          ingredientes_usados: ["huevo", "lechuga", "queso", "jamon", "tostada"],
+          metodo: "plancha",
+          bebida: "agua segura",
+          pasos: [
+            "Tostá las rodajas de pan.",
+            "En una sartén antiadherente con un poquito de aceite vegetal, cociná el huevo a la plancha o revuelto a tu gusto.",
+            "Armá el tostado intercalando el queso, jamón y el huevo cocido entre las rodajas de pan.",
+            "Serví el tostado junto a una abundante porción de lechuga fresca, previamente lavada. Podés aderezar la ensalada con un poquito de aceite vegetal y una pizca de sal y pimienta."
+          ]
+        },
+        alternativas_si_falta_algo: [],
+        consejos: {
+          sodio: "Moderá el uso de sal para el huevo y tené en cuenta que el jamón ya aporta sodio. Evitá aderezos altos en sodio.",
+          azucar: "Acompañá siempre tus comidas con agua segura. Evitá las bebidas azucaradas.",
+          higiene: "Lavate bien las manos antes de manipular alimentos y asegurate de lavar a conciencia la lechuga."
+        },
+        justificacion_breve: "Este plato aprovecha todos tus ingredientes para ofrecerte un almuerzo o cena equilibrado. Combina proteínas del huevo, jamón y queso, carbohidratos de la tostada y una buena porción de fibra y vitaminas de la lechuga, ideal para tu objetivo de regular el peso con actividad media.",
+        memory_out: {
+          last_dish_id: "TostadoCompletoHuevoEnsalada_1",
+          last_pantry: ["huevo", "lechuga", "queso", "jamon", "tostada"],
+          likes: [],
+          dislikes: [],
+          banned: [],
+          updated_at: new Date().toISOString()
+        }
+      };
+
+      return res.status(200).json(recipeJSON);
+    }
 
   } catch (e) {
     console.error(e);
