@@ -21,7 +21,7 @@ Si NO recibís ese flag, devolvé SOLO el JSON del esquema de abajo.
 
 REGLAS NUCLEARES
 
-Plato equilibrado: ½ verduras/frutas, ¼ proteínas, ¼ cereales/tubérculos/legumbres.
+Plato equilibrado: ½ verduras/frutas, ¼ proteínas, ¼ cereales/tuberculos/legumbres.
 Cocciones saludables: hervido, vapor, plancha, horno. Aceite vegetal en crudo (poca cantidad). Agua como bebida.
 Menos sal y azúcares: sin bebidas azucaradas; evitar frituras frecuentes.
 Si falta un grupo, proponé sustitución con legumbres/huevo o cereal/tubérculo disponible.
@@ -128,7 +128,7 @@ export default async function handler(req, res) {
     // Llamada a Google Gemini (Flash 2.5)
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: "gemini-flash-2.5",
+      model: "gemini-2.5-flash",  // Modelo sin versión específica
       systemInstruction: GOD_PROMPT
     });
 
