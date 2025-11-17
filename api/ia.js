@@ -101,22 +101,8 @@ export default async function handler(req, res) {
     const gres = await model.generateContent(JSON.stringify(payload));
     const output = gres.response.text();  // Este es el resultado final en texto
 
-    // Siempre devolver el HTML estructurado
-    const formattedResponse = `
-      <h2>Receta con lo que tienes:</h2>
-      <p><strong>Plato:</strong> ${gres.response.dish?.nombre || 'Plato no disponible'}</p>
-      <ul>
-        <li><strong>Ingredientes:</strong> ${gres.response.dish?.ingredientes_usados?.join(', ') || 'Ingredientes no disponibles'}</li>
-        <li><strong>Metodo:</strong> ${gres.response.dish?.metodo || 'Método no disponible'}</li>
-        <li><strong>Bebida recomendada:</strong> ${gres.response.dish?.bebida || 'Bebida no disponible'}</li>
-      </ul>
-      <h2>Receta ajustada (mejor balanceada):</h2>
-      <p>${gres.response.justificacion_breve || 'Justificación no disponible'}</p>
-      <h2>Lista de compras recomendadas:</h2>
-      <p>Si no tienes todos los ingredientes, considera comprar: ${gres.response.alternativas_si_falta_algo?.join(', ') || 'No se requieren compras adicionales.'}</p>
-    `;
-
-    return res.status(200).send(formattedResponse);
+    // Respuesta con el contenido generado
+    return res.status(200).json({ reply: output });
 
   } catch (e) {
     return res.status(500).json({ error: 'IA error', detail: e.message });
