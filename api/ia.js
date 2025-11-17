@@ -1,52 +1,145 @@
-// Fuerza runtime Node.js (evita límites más agresivos del Edge)
-export const config = { runtime: 'nodejs' };
+// api/ia.js – Implementación de IA usando Google Gemini Flash 2.5 (sin n8n)
+import { GoogleGenerativeAI } from "@google/generative-ai"; // Asegúrate de instalar el SDK de Gemini
 
+// Configuración para Node.js en Vercel o tu servidor
+export const config = { runtime: "nodejs" };
+
+// GOD_PROMPT que usabas en n8n, replicado aquí para Gemini
+const GOD_PROMPT = `
+Sos Nutriado, un recomendador nutricional argentino.
+Con sexo, edad, altura, peso, IMC, objetivo, nivel de actividad e ingredientes disponibles (pantry), producís una respuesta según el modo de salida.
+
+Modo de salida (conmutador)
+Si en la entrada recibís output_mode: "html_3_secciones", devolvé SOLO HTML (sin texto fuera del HTML) con estas 3 secciones, en español rioplatense, claro y breve:
+
+- Solo con lo que tenés: receta usando estrictamente la pantry. Si hace falta quitar o reducir 1 ingrediente, decilo explícito (“te saqué X porque…”).
+- Con ajustes mínimos: mismo plato pero mejor balanceado (½–¼–¼) quitando/reduciendo 1 cosa o cambiando la técnica. Explicá el porqué.
+- Para dejarlo perfecto (compras): lista corta de compras recomendadas y el plato equilibrado ideal usando lo disponible + esas compras (½ verduras/frutas, ¼ proteínas, ¼ cereales/tubérculos/legumbres y similares).
+Notas: dividí ingredientes solo por comas; “esencia de vainilla” es un ingrediente. Podés usar comodines implícitos (agua, sal mínima, pimienta, aceite vegetal, hierbas, ajo y similares) sin listarlos.
+
+Si NO recibís ese flag, devolvé SOLO el JSON del esquema de abajo.
+
+REGLAS NUCLEARES
+
+Plato equilibrado: ½ verduras/frutas, ¼ proteínas, ¼ cereales/tubérculos/legumbres.
+Cocciones saludables: hervido, vapor, plancha, horno. Aceite vegetal en crudo (poca cantidad). Agua como bebida.
+Menos sal y azúcares: sin bebidas azucaradas; evitar frituras frecuentes.
+Si falta un grupo, proponé sustitución con legumbres/huevo o cereal/tubérculo disponible.
+Usar lo disponible: priorizá la pantry; comodines implícitos (no listarlos): agua, sal mínima, pimienta, aceite vegetal, hierbas/especias, ajo.
+
+Ajustá porciones según objetivo/actividad manteniendo proporciones del plato.
+Español rioplatense, claro y breve.
+
+MAPEOS Y NORMALIZACIÓN
+Sinónimos: morrón↔pimiento; “carne”→“carne magra”; “verdura(s)” no es ingrediente: inferí concretos (lechuga, tomate, cebolla, zanahoria, zapallo, etc.).
+
+Grupos:
+verduras_y_frutas = (tomate, lechuga, zanahoria, cebolla, morrón, acelga, espinaca, brócoli, zapallo/calabaza, frutas y similares)
+proteinas = (pollo sin piel, pescado, carne magra, cerdo magro, huevo, lentejas, garbanzos, porotos, tofu y similares)
+cereales_tuberculos_legumbres = (arroz, fideos, polenta, pan, papa, batata, avena, lentejas, garbanzos, porotos y similares)
+
+ESQUEMA (llenalo con valores concretos):
+
+{
+"ok": boolean,
+"profile": { "sexo": "m|f|x|null", "edad": number|null, "altura_cm": number|null, "peso_kg": number|null, "imc": number|null },
+"pantry_detected": string[],
+"groups_covered": string[], // ["verduras_y_frutas","proteinas","cereales_tuberculos_legumbres"]
+"dish": {
+"id": string,
+"nombre": string,
+"proporciones": { "verduras_y_frutas": number, "proteinas": number, "cereales_tuberculos_legumbres": number },
+"porciones_orientativas": {
+"proteinas": string,
+"cereales_tuberculos_legumbres": string,
+"verduras_y_frutas": string
+},
+"ingredientes_usados": string[],
+"metodo": "hervido"|"vapor"|"plancha"|"horno",
+"bebida": "agua segura",
+"pasos": string[]
+},
+"alternativas_si_falta_algo": string[],
+"consejos": { "sodio": string, "azucar": string, "higiene": string },
+"justificacion_breve": string,
+"memory_out": {
+"last_dish_id": string,
+"last_pantry": string[],
+"likes": string[],
+"dislikes": string[],
+"banned": string[],
+"updated_at": string // ISO8601
+}
+}
+`;
+
+// Handler que recibe el POST con los datos y los procesa
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const N8N_URL = process.env.N8N_WEBHOOK_URL;
-  if (!N8N_URL) {
-    return res.status(500).json({ error: 'Missing N8N_WEBHOOK_URL' });
-  }
+  if (req.method !== "POST")
+    return res.status(405).json({ error: "Only POST allowed" });
 
   try {
-    const raw = (req.body && typeof req.body === 'object') ? req.body : JSON.parse(req.body || '{}');
+    const input = req.body || {};
+    const profile = input.context?.profile || {};
+    const pantryRaw = Array.isArray(input.context?.pantry) ? input.context.pantry : [];
+    const msgText = (input.message || "").toLowerCase().trim();
 
-    // Garantiza pantry como array por comas (opcional pero útil)
-    const pantry = Array.isArray(raw?.context?.pantry)
-      ? raw.context.pantry
-      : String(raw?.message || '')
-          .split(',').map(s => s.trim()).filter(Boolean);
+    // Tokenización y normalización básica
+    const stop = new Set([
+      "hola", "buenas", "quiero", "necesito", "hacer", "con", "sin", "para", 
+      "una", "un", "el", "la", "las", "los", "de", "y", "verdura", "verduras"
+    ]);
 
-    const safe = {
-      message: String(raw?.message ?? '').slice(0, 2000),
-      context: { ...(raw?.context ?? {}), pantry },
-      sessionId: String(raw?.sessionId ?? '').slice(0, 100),
+    const map = {
+      "morron": "morrón", "morrones": "morrón", "pimiento": "morrón", 
+      "pimenton": "morrón", "lechugas": "lechuga", "tomates": "tomate", 
+      "zanahorias": "zanahoria", "carne": "carne magra", "vacuna": "carne magra", 
+      "papas": "papa"
     };
 
-    // ⚠️ Quitar el AbortController (dejamos que Vercel maneje el timeout de la función)
-    const headers = { 'Content-Type': 'application/json' };
-    if (process.env.N8N_SECRET) headers['X-API-KEY'] = process.env.N8N_SECRET;
+    function tokenizePantry(arr, msg) {
+      const base = arr.length ? arr : [msg];
+      const text = base.join(" ").toLowerCase();
+      let toks = text.split(/[^a-záéíóúüñ0-9]+/i).filter(Boolean);
+      toks = toks.filter(t => !stop.has(t));
+      toks = toks.map(t => map[t] || t);
+      return Array.from(new Set(toks));
+    }
 
-    const r = await fetch(N8N_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(safe),
-      // cache explícito para que no haya interferencias
-      cache: 'no-store',
+    const pantry = tokenizePantry(pantryRaw, msgText);
+
+    // Crear el payload para la llamada a Google Gemini
+    const payload = {
+      instruction: "Generá un único plato equilibrado con lo disponible.",
+      profile: {
+        sexo: profile.sexo || null,
+        edad: profile.edad ?? null,
+        altura_cm: profile.alturaCm ?? null,
+        peso_kg: profile.pesoKg ?? null,
+        imc: profile.imc ?? null,
+        objetivo: profile.objetivo || "regular",
+        nivel_actividad: profile.nivel_actividad || "medio"
+      },
+      pantry,
+      text: msgText || input.message,
+      sessionId: input.sessionId || "anon"
+    };
+
+    // Llamada a Google Gemini (Flash 2.5)
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-flash-2.5",
+      systemInstruction: GOD_PROMPT
     });
 
-    const ct = r.headers.get('content-type') || 'application/json';
-    const text = await r.text();
-    res.setHeader('Cache-Control', 'no-store');
-    return res.status(r.status).setHeader('Content-Type', ct).send(text);
+    const gres = await model.generateContent(JSON.stringify(payload));
+    const output = gres.response.text();  // Este es el resultado final en texto
+
+    // Respuesta con el contenido generado
+    return res.status(200).json({ reply: output });
+
   } catch (e) {
-    return res.status(500).json({
-      error: 'Proxy error',
-      detail: String(e?.message || e),
-    });
+    console.error(e);
+    return res.status(500).json({ error: "IA error", detail: e.message });
   }
 }
