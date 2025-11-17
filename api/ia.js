@@ -1,4 +1,3 @@
-// api/ia.js – Implementación de IA usando Google Gemini Flash 2.5 (sin n8n)
 import { GoogleGenerativeAI } from "@google/generative-ai"; // Asegúrate de instalar el SDK de Gemini
 
 // Configuración para Node.js en Vercel o tu servidor
@@ -102,7 +101,7 @@ export default async function handler(req, res) {
     const gres = await model.generateContent(JSON.stringify(payload));
     const output = gres.response.text();  // Este es el resultado final en texto
 
-    // Formatear la respuesta a HTML con las tres secciones (solo si no se recibe output_mode "html_3_secciones")
+    // Si no hay output_mode, devolver siempre el JSON bien formateado
     const formattedResponse = `
       <h2>Receta con lo que tienes:</h2>
       <p><strong>Plato:</strong> ${output.dish?.nombre || 'Plato no disponible'}</p>
