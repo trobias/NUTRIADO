@@ -117,7 +117,7 @@ export default async function handler(req, res) {
     const imc = profile.imc || 0;
     const estadoSalud = calcularSaludIMC(imc);
 
-    // Crear respuesta sin duplicar el IMC
+    // Crear respuesta consolidada con IMC, datos de perfil y evaluación de salud
     const respuesta = `
       ✅ Perfil listo. IMC: ${imc}
       ✅ Perfil guardado. Edad: ${profile.edad}, Sexo: ${profile.sexo}, Peso: ${profile.peso_kg} kg, Altura: ${profile.altura_cm} cm.
