@@ -89,67 +89,61 @@ export default async function handler(req, res) {
 
     const output = gres.response.text();  // Este es el resultado final en texto
 
-    // Verificar si el `output_mode` está presente
-    if (input.output_mode === "html_3_secciones") {
-      // Si la flag está presente, devolvemos el HTML estructurado
-      return res.status(200).send(output);
-    } else {
-      // Si no hay flag, devolvemos un JSON con la receta
-      const recipeJSON = {
-        ok: true,
-        profile: {
-          sexo: profile.sexo,
-          edad: profile.edad,
-          altura_cm: profile.altura_cm,
-          peso_kg: profile.peso_kg,
-          imc: profile.imc,
-          objetivo: profile.objetivo,
-          nivel_actividad: profile.nivel_actividad
+    // Siempre devolvemos el JSON con la receta
+    const recipeJSON = {
+      ok: true,
+      profile: {
+        sexo: profile.sexo,
+        edad: profile.edad,
+        altura_cm: profile.altura_cm,
+        peso_kg: profile.peso_kg,
+        imc: profile.imc,
+        objetivo: profile.objetivo,
+        nivel_actividad: profile.nivel_actividad
+      },
+      pantry_detected: pantry,
+      groups_covered: ["verduras_y_frutas", "proteinas", "cereales_tuberculos_legumbres"],
+      dish: {
+        id: "TostadoCompletoHuevoEnsalada_1",  // Este sería el id del plato generado
+        nombre: "Tostado Completo con Huevo y Ensalada Fresca",
+        proporciones: {
+          verduras_y_frutas: 0.5,
+          proteinas: 0.25,
+          cereales_tuberculos_legumbres: 0.25
         },
-        pantry_detected: pantry,
-        groups_covered: ["verduras_y_frutas", "proteinas", "cereales_tuberculos_legumbres"],
-        dish: {
-          id: "TostadoCompletoHuevoEnsalada_1",  // Este sería el id del plato generado
-          nombre: "Tostado Completo con Huevo y Ensalada Fresca",
-          proporciones: {
-            verduras_y_frutas: 0.5,
-            proteinas: 0.25,
-            cereales_tuberculos_legumbres: 0.25
-          },
-          porciones_orientativas: {
-            proteinas: "1 huevo, 1 feta de jamón magro, 1 feta de queso descremado",
-            cereales_tuberculos_legumbres: "2 rodajas de tostada",
-            verduras_y_frutas: "Cantidad generosa de lechuga"
-          },
-          ingredientes_usados: ["huevo", "lechuga", "queso", "jamon", "tostada"],
-          metodo: "plancha",
-          bebida: "agua segura",
-          pasos: [
-            "Tostá las rodajas de pan.",
-            "En una sartén antiadherente con un poquito de aceite vegetal, cociná el huevo a la plancha o revuelto a tu gusto.",
-            "Armá el tostado intercalando el queso, jamón y el huevo cocido entre las rodajas de pan.",
-            "Serví el tostado junto a una abundante porción de lechuga fresca, previamente lavada. Podés aderezar la ensalada con un poquito de aceite vegetal y una pizca de sal y pimienta."
-          ]
+        porciones_orientativas: {
+          proteinas: "1 huevo, 1 feta de jamón magro, 1 feta de queso descremado",
+          cereales_tuberculos_legumbres: "2 rodajas de tostada",
+          verduras_y_frutas: "Cantidad generosa de lechuga"
         },
-        alternativas_si_falta_algo: [],
-        consejos: {
-          sodio: "Moderá el uso de sal para el huevo y tené en cuenta que el jamón ya aporta sodio. Evitá aderezos altos en sodio.",
-          azucar: "Acompañá siempre tus comidas con agua segura. Evitá las bebidas azucaradas.",
-          higiene: "Lavate bien las manos antes de manipular alimentos y asegurate de lavar a conciencia la lechuga."
-        },
-        justificacion_breve: "Este plato aprovecha todos tus ingredientes para ofrecerte un almuerzo o cena equilibrado. Combina proteínas del huevo, jamón y queso, carbohidratos de la tostada y una buena porción de fibra y vitaminas de la lechuga, ideal para tu objetivo de regular el peso con actividad media.",
-        memory_out: {
-          last_dish_id: "TostadoCompletoHuevoEnsalada_1",
-          last_pantry: ["huevo", "lechuga", "queso", "jamon", "tostada"],
-          likes: [],
-          dislikes: [],
-          banned: [],
-          updated_at: new Date().toISOString()
-        }
-      };
+        ingredientes_usados: ["huevo", "lechuga", "queso", "jamon", "tostada"],
+        metodo: "plancha",
+        bebida: "agua segura",
+        pasos: [
+          "Tostá las rodajas de pan.",
+          "En una sartén antiadherente con un poquito de aceite vegetal, cociná el huevo a la plancha o revuelto a tu gusto.",
+          "Armá el tostado intercalando el queso, jamón y el huevo cocido entre las rodajas de pan.",
+          "Serví el tostado junto a una abundante porción de lechuga fresca, previamente lavada. Podés aderezar la ensalada con un poquito de aceite vegetal y una pizca de sal y pimienta."
+        ]
+      },
+      alternativas_si_falta_algo: [],
+      consejos: {
+        sodio: "Moderá el uso de sal para el huevo y tené en cuenta que el jamón ya aporta sodio. Evitá aderezos altos en sodio.",
+        azucar: "Acompañá siempre tus comidas con agua segura. Evitá las bebidas azucaradas.",
+        higiene: "Lavate bien las manos antes de manipular alimentos y asegurate de lavar a conciencia la lechuga."
+      },
+      justificacion_breve: "Este plato aprovecha todos tus ingredientes para ofrecerte un almuerzo o cena equilibrado. Combina proteínas del huevo, jamón y queso, carbohidratos de la tostada y una buena porción de fibra y vitaminas de la lechuga, ideal para tu objetivo de regular el peso con actividad media.",
+      memory_out: {
+        last_dish_id: "TostadoCompletoHuevoEnsalada_1",
+        last_pantry: ["huevo", "lechuga", "queso", "jamon", "tostada"],
+        likes: [],
+        dislikes: [],
+        banned: [],
+        updated_at: new Date().toISOString()
+      }
+    };
 
-      return res.status(200).json(recipeJSON);
-    }
+    return res.status(200).json(recipeJSON);
 
   } catch (e) {
     console.error(e);
