@@ -1,3 +1,4 @@
+// api/ia.js – Implementación de IA usando Google Gemini Flash 2.5 (sin n8n)
 import { GoogleGenerativeAI } from "@google/generative-ai"; // Asegúrate de instalar el SDK de Gemini
 
 // Configuración para Node.js en Vercel o tu servidor
@@ -13,7 +14,7 @@ Si en la entrada recibís output_mode: "html_3_secciones", devolvé SOLO HTML (s
 
 - Solo con lo que tenés: receta usando estrictamente la pantry. Si hace falta quitar o reducir 1 ingrediente, decilo explícito (“te saqué X porque…”).
 - Con ajustes mínimos: mismo plato pero mejor balanceado (½–¼–¼) quitando/reduciendo 1 cosa o cambiando la técnica. Explicá el porqué.
-- Para dejarlo perfecto (compras): lista corta de compras recomendadas y el plato equilibrado ideal usando lo disponible + esas compras (½ verduras/frutas, ¼ proteínas, ¼ cereales/tuberculos/legumbres y similares).
+- Para dejarlo perfecto (compras): lista corta de compras recomendadas y el plato equilibrado ideal usando lo disponible + esas compras (½ verduras/frutas, ¼ proteínas, ¼ cereales/tubérculos/legumbres y similares).
 Notas: dividí ingredientes solo por comas; “esencia de vainilla” es un ingrediente. Podés usar comodines implícitos (agua, sal mínima, pimienta, aceite vegetal, hierbas, ajo y similares) sin listarlos.
 
 Si NO recibís ese flag, devolvé SOLO el JSON del esquema de abajo.
@@ -101,8 +102,23 @@ export default async function handler(req, res) {
     const gres = await model.generateContent(JSON.stringify(payload));
     const output = gres.response.text();  // Este es el resultado final en texto
 
-    // Respuesta con el contenido generado
-    return res.status(200).json({ reply: output });
+    // Formatear la respuesta a HTML con las tres secciones (solo si no se recibe output_mode "html_3_secciones")
+    const formattedResponse = `
+      <h2>Receta con lo que tienes:</h2>
+      <p><strong>Plato:</strong> ${output.dish.nombre || 'Plato no disponible'}</p>
+      <ul>
+        <li><strong>Ingredientes:</strong> ${output.dish.ingredientes_usados?.join(', ') || 'Ingredientes no disponibles'}</li>
+        <li><strong>Método:</strong> ${output.dish.metodo || 'Método no disponible'}</li>
+        <li><strong>Bebida recomendada:</strong> ${output.dish.bebida || 'Bebida no disponible'}</li>
+      </ul>
+      <h2>Receta ajustada (mejor balanceada):</h2>
+      <p>${output.justificacion_breve || 'Justificación no disponible'}</p>
+      <h2>Lista de compras recomendadas:</h2>
+      <p>Si no tienes todos los ingredientes, considera comprar: ${output.alternativas_si_falta_algo?.join(', ') || 'No se requieren compras adicionales.'}</p>
+    `;
+
+    // Devolver la respuesta formateada
+    return res.status(200).send(formattedResponse);
 
   } catch (e) {
     return res.status(500).json({ error: 'IA error', detail: e.message });
