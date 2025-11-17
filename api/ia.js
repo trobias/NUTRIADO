@@ -100,16 +100,21 @@ export default async function handler(req, res) {
     });
 
     const gres = await model.generateContent(JSON.stringify(payload));
-    const output = gres.response.text();  // Este es el resultado final en texto
 
-    // Siempre devolver el HTML con la receta sin IMC repetido
+    // Comprobamos si los datos de la respuesta son válidos
+    const dish = gres.response?.dish;
+
+    if (!dish || !dish.nombre) {
+      return res.status(500).json({ error: 'Datos de receta no disponibles' });
+    }
+
     const formattedResponse = `
       <h2>Receta con lo que tienes:</h2>
-      <p><strong>Plato:</strong> ${gres.response.dish.nombre}</p>
+      <p><strong>Plato:</strong> ${dish.nombre}</p>
       <ul>
-        <li><strong>Ingredientes:</strong> ${gres.response.dish.ingredientes_usados.join(', ')}</li>
-        <li><strong>Metodo:</strong> ${gres.response.dish.metodo}</li>
-        <li><strong>Bebida recomendada:</strong> ${gres.response.dish.bebida}</li>
+        <li><strong>Ingredientes:</strong> ${dish.ingredientes_usados.join(', ')}</li>
+        <li><strong>Metodo:</strong> ${dish.metodo}</li>
+        <li><strong>Bebida recomendada:</strong> ${dish.bebida}</li>
       </ul>
       <h2>Receta ajustada (mejor balanceada):</h2>
       <p>${gres.response.justificacion_breve}</p>
@@ -117,10 +122,10 @@ export default async function handler(req, res) {
       <p>Si no tienes todos los ingredientes, considera comprar: ${gres.response.alternativas_si_falta_algo.join(', ')}</p>
     `;
 
-    // Siempre devolver la receta en formato HTML
     return res.status(200).send(formattedResponse);
 
   } catch (e) {
+    console.error(e);
     return res.status(500).json({ error: 'IA error', detail: e.message });
   }
 }
