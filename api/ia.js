@@ -105,11 +105,11 @@ export default async function handler(req, res) {
     // Formatear la respuesta a HTML con las tres secciones (solo si no se recibe output_mode "html_3_secciones")
     const formattedResponse = `
       <h2>Receta con lo que tienes:</h2>
-      <p><strong>Plato:</strong> ${output.dish.nombre || 'Plato no disponible'}</p>
+      <p><strong>Plato:</strong> ${output.dish?.nombre || 'Plato no disponible'}</p>
       <ul>
-        <li><strong>Ingredientes:</strong> ${output.dish.ingredientes_usados?.join(', ') || 'Ingredientes no disponibles'}</li>
-        <li><strong>Método:</strong> ${output.dish.metodo || 'Método no disponible'}</li>
-        <li><strong>Bebida recomendada:</strong> ${output.dish.bebida || 'Bebida no disponible'}</li>
+        <li><strong>Ingredientes:</strong> ${output.dish?.ingredientes_usados?.join(', ') || 'Ingredientes no disponibles'}</li>
+        <li><strong>Método:</strong> ${output.dish?.metodo || 'Método no disponible'}</li>
+        <li><strong>Bebida recomendada:</strong> ${output.dish?.bebida || 'Bebida no disponible'}</li>
       </ul>
       <h2>Receta ajustada (mejor balanceada):</h2>
       <p>${output.justificacion_breve || 'Justificación no disponible'}</p>
