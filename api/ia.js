@@ -1,5 +1,5 @@
 // api/ia.js – Nutriado usando Google Gemini Flash 2.5 (Vercel Serverless)
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 // Configuración para Node.js en Vercel
 export const config = { runtime: "nodejs" };
