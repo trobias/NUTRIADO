@@ -166,34 +166,37 @@ export default async function handler(req, res) {
       output_mode: input.output_mode || null,
     };
 
-    // --- Llamada a Gemini ---
+    // --- Llamada a Google Gemini (versión correcta) ---
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      systemInstruction: GOD_PROMPT,
+      model: "gemini-2.5-flash-exp",   // ← el modelo estable para hoy
+      systemInstruction: GOD_PROMPT
     });
 
     const result = await model.generateContent({
       contents: [
         {
           role: "user",
-          parts: [{ text: JSON.stringify(payload) }],
-        },
-      ],
+          parts: [
+            { text: JSON.stringify(payload) }  // ← mensaje del usuario
+          ]
+        }
+      ]
     });
 
-    const raw = result.response.text();
+    const output = result.response.text();
 
     // --- Intentar parsear JSON, si no es JSON → fallback a reply HTML ---
     let parsed;
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(output);
     } catch {
-      parsed = { reply: raw };
+      parsed = { reply: output };  // Fallback si no es JSON
     }
 
     return res.status(200).json(parsed);
+
   } catch (err) {
     console.error("Nutriado IA Error:", err);
     return res.status(500).json({
