@@ -63,7 +63,7 @@ function renderBotMessage(data) {
         : '';
     const ol = arr =>
       Array.isArray(arr) && arr.length
-        ? `<ol>${arr.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ol>`
+        ? `<ol>${arr.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ol>`
         : '';
     const prop = d.proporciones || {};
     html += `<h4>🍽️ ${escapeHtml(d.nombre || 'Plato sugerido')}</h4>`;
@@ -165,6 +165,25 @@ function guessPantryFromText(text = '') {
     .map(s => s.toLowerCase());
 }
 
+// --- Overlay helpers (usando jQuery LoadingOverlay de forma "segura") ---
+function showOverlay(targetSelector = '#nutriado-chat', message = 'Generando tu receta...') {
+  try {
+    if (window.jQuery && typeof jQuery.fn.LoadingOverlay === 'function') {
+      const $t = jQuery(targetSelector);
+      if ($t.length) $t.LoadingOverlay('show', { text: message });
+    }
+  } catch (_) {}
+}
+
+function hideOverlay(targetSelector = '#nutriado-chat') {
+  try {
+    if (window.jQuery && typeof jQuery.fn.LoadingOverlay === 'function') {
+      const $t = jQuery(targetSelector);
+      if ($t.length) $t.LoadingOverlay('hide');
+    }
+  } catch (_) {}
+}
+
 // --- Perfil (fallback si no usás el script del index) ---
 $userForm?.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -222,6 +241,9 @@ $form?.addEventListener('submit', async (e) => {
   };
 
   try {
+    // Mostrar overlay mientras consultamos la IA
+    showOverlay('#nutriado-chat', 'Generando tu receta...');
+
     const r = await fetch('/api/ia', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -244,6 +266,9 @@ $form?.addEventListener('submit', async (e) => {
   } catch (err) {
     console.error(err);
     thinking.textContent = '💥 Error hablando con el asistente.';
+  } finally {
+    // Ocultar overlay SIEMPRE (éxito o error)
+    hideOverlay('#nutriado-chat');
   }
 });
 
